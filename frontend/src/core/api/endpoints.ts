@@ -24,3 +24,7 @@ export const CART = {
 export const APPROVALS = {
   BASE: "/api/approvals",
 } as const;
+
+export const MERCHANTS = {
+  BASE: "/api/merchants",
+} as const;
