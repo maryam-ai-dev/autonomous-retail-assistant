@@ -10,3 +10,7 @@ export const PROFILE = {
 export const PREFERENCES = {
   BASE: "/api/preferences",
 } as const;
+
+export const DISCOVERY = {
+  SEARCH: "/api/discovery/search",
+} as const;
