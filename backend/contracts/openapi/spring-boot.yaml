@@ -1,0 +1,111 @@
+openapi: 3.0.3
+info:
+  title: Aisleon Authority Layer API
+  description: Spring Boot backend API for the Aisleon retail assistant.
+  version: 0.1.0
+
+paths:
+  /api/auth/register:
+    post:
+      summary: Register a new user
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email: { type: string, format: email }
+                password: { type: string, minLength: 8 }
+                username: { type: string }
+                displayName: { type: string }
+              required: [email, password, username]
+      responses:
+        "201":
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+
+  /api/auth/login:
+    post:
+      summary: Log in with credentials
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email: { type: string, format: email }
+                password: { type: string }
+              required: [email, password]
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+
+  /api/discovery/search:
+    post:
+      summary: Search for products across connectors
+      tags: [Discovery]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DiscoveryRequest"
+      responses:
+        "200":
+          description: Discovery results with ranked products
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DiscoveryResponse"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    AuthResponse:
+      type: object
+      properties:
+        token: { type: string }
+        userId: { type: string, format: uuid }
+        username: { type: string }
+
+    DiscoveryRequest:
+      type: object
+      properties:
+        query: { type: string }
+        userId: { type: string, format: uuid }
+        maxResults: { type: integer, default: 10 }
+      required: [query]
+
+    DiscoveryResponse:
+      type: object
+      properties:
+        products:
+          type: array
+          items: { type: object }
+        totalFound: { type: integer }
+        sourcesUsed:
+          type: array
+          items: { type: string }
+        confidence: { type: number }
+        strategyUsed: { type: string }
+        uncertaintyAssessment: { type: object }
+        queryProcessedAt: { type: string, format: date-time }
+      required: [products, totalFound, sourcesUsed, queryProcessedAt]

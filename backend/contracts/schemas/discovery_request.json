@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "DiscoveryRequest",
+  "description": "Request payload for product discovery search.",
+  "type": "object",
+  "properties": {
+    "query": {
+      "type": "string",
+      "description": "Search query string"
+    },
+    "userId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "UUID of the requesting user"
+    },
+    "maxResults": {
+      "type": "integer",
+      "default": 10,
+      "description": "Maximum number of results to return"
+    }
+  },
+  "required": ["query"]
+}

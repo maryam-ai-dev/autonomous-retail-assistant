@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "DiscoveryResponse",
+  "description": "Response payload from product discovery search with ranking and trust data.",
+  "type": "object",
+  "properties": {
+    "products": {
+      "type": "array",
+      "items": { "$ref": "normalized_product.json" },
+      "description": "Ranked list of normalised products"
+    },
+    "totalFound": {
+      "type": "integer",
+      "description": "Total number of products found"
+    },
+    "sourcesUsed": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "List of connector sources that contributed results"
+    },
+    "confidence": {
+      "type": "number",
+      "description": "Overall confidence score from the ranking pipeline (0-1)"
+    },
+    "strategyUsed": {
+      "type": "string",
+      "description": "Name of the ranking strategy applied"
+    },
+    "uncertaintyAssessment": {
+      "type": "object",
+      "properties": {
+        "confidence": { "type": "number" },
+        "isUncertain": { "type": "boolean" },
+        "reasons": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "recommendation": { "type": "string" }
+      },
+      "description": "Uncertainty assessment from the AI service"
+    },
+    "queryProcessedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp when the query was processed"
+    }
+  },
+  "required": ["products", "totalFound", "sourcesUsed", "queryProcessedAt"]
+}
