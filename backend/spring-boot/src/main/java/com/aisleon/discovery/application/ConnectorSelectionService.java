@@ -22,11 +22,14 @@ public class ConnectorSelectionService {
 
     private final EbayApiConnector ebayApiConnector;
     private final ProductNormalizationService normalizationService;
+    private final PythonAiServiceClient pythonAiServiceClient;
 
     public ConnectorSelectionService(EbayApiConnector ebayApiConnector,
-                                     ProductNormalizationService normalizationService) {
+                                     ProductNormalizationService normalizationService,
+                                     PythonAiServiceClient pythonAiServiceClient) {
         this.ebayApiConnector = ebayApiConnector;
         this.normalizationService = normalizationService;
+        this.pythonAiServiceClient = pythonAiServiceClient;
     }
 
     public DiscoveryResult discover(String query, RetailPreferences preferences) {
@@ -50,11 +53,18 @@ public class ConnectorSelectionService {
 
         List<NormalizedProduct> normalized = normalizationService.normalize(allProducts);
 
+        // Call Python AI service for ranking
+        RankedDiscoveryResult ranked = pythonAiServiceClient.rank(query, normalized, preferences);
+
         return new DiscoveryResult(
                 normalized,
                 sourcesUsed,
                 normalized.size(),
-                Instant.now()
+                Instant.now(),
+                ranked.getConfidence(),
+                ranked.getStrategyUsed(),
+                ranked.getUncertainty(),
+                ranked.getRankedProducts()
         );
     }
 }
