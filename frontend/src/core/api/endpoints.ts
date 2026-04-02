@@ -14,3 +14,9 @@ export const PREFERENCES = {
 export const DISCOVERY = {
   SEARCH: "/api/discovery/search",
 } as const;
+
+export const CART = {
+  BASE: "/api/cart",
+  ITEMS: "/api/cart/items",
+  CHECKOUT: "/api/cart/checkout",
+} as const;
