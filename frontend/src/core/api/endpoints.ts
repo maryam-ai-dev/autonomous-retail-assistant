@@ -20,3 +20,7 @@ export const CART = {
   ITEMS: "/api/cart/items",
   CHECKOUT: "/api/cart/checkout",
 } as const;
+
+export const APPROVALS = {
+  BASE: "/api/approvals",
+} as const;
