@@ -1,5 +1,6 @@
 package com.aisleon.discovery.application;
 
+import com.aisleon.common.events.ProductCandidatesRankedEvent;
 import com.aisleon.discovery.domain.DiscoveryResult;
 import com.aisleon.discovery.domain.NormalizedProduct;
 import com.aisleon.discovery.infrastructure.connectors.api.base.ApiConnectorResult;
@@ -8,11 +9,13 @@ import com.aisleon.discovery.infrastructure.normalization.ProductNormalizationSe
 import com.aisleon.preferences.domain.RetailPreferences;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class ConnectorSelectionService {
@@ -23,13 +26,16 @@ public class ConnectorSelectionService {
     private final EbayApiConnector ebayApiConnector;
     private final ProductNormalizationService normalizationService;
     private final PythonAiServiceClient pythonAiServiceClient;
+    private final ApplicationEventPublisher eventPublisher;
 
     public ConnectorSelectionService(EbayApiConnector ebayApiConnector,
                                      ProductNormalizationService normalizationService,
-                                     PythonAiServiceClient pythonAiServiceClient) {
+                                     PythonAiServiceClient pythonAiServiceClient,
+                                     ApplicationEventPublisher eventPublisher) {
         this.ebayApiConnector = ebayApiConnector;
         this.normalizationService = normalizationService;
         this.pythonAiServiceClient = pythonAiServiceClient;
+        this.eventPublisher = eventPublisher;
     }
 
     public DiscoveryResult discover(String query, RetailPreferences preferences) {
@@ -55,6 +61,26 @@ public class ConnectorSelectionService {
 
         // Call Python AI service for ranking
         RankedDiscoveryResult ranked = pythonAiServiceClient.rank(query, normalized, preferences);
+
+        // Publish ProductCandidatesRankedEvent
+        List<String> topTitles = List.of();
+        if (ranked.getRankedProducts() != null) {
+            topTitles = ranked.getRankedProducts().stream()
+                    .limit(5)
+                    .map(rp -> {
+                        Map<String, Object> product = rp.getProduct();
+                        return product != null ? String.valueOf(product.getOrDefault("title", "")) : "";
+                    })
+                    .toList();
+        }
+
+        eventPublisher.publishEvent(new ProductCandidatesRankedEvent(
+                preferences.getUserId(),
+                query,
+                topTitles,
+                ranked.getConfidence(),
+                ranked.getStrategyUsed()
+        ));
 
         return new DiscoveryResult(
                 normalized,

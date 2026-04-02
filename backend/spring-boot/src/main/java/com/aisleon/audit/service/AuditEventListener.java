@@ -7,6 +7,7 @@ import com.aisleon.audit.repository.AuditEventJpaEntity;
 import com.aisleon.audit.repository.AuditRepository;
 import com.aisleon.cart.events.ApprovalRequiredEvent;
 import com.aisleon.cart.events.CartCheckedOutEvent;
+import com.aisleon.common.events.ProductCandidatesRankedEvent;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,6 +58,12 @@ public class AuditEventListener {
     @Async("auditExecutor")
     public void onApprovalRequired(ApprovalRequiredEvent event) {
         saveEvent(event.userId(), "APPROVAL_REQUIRED", "cart", event.cartId().toString(), event);
+    }
+
+    @EventListener
+    @Async("auditExecutor")
+    public void onProductCandidatesRanked(ProductCandidatesRankedEvent event) {
+        saveEvent(event.userId(), "PRODUCTS_RANKED", "discovery", null, event);
     }
 
     @SuppressWarnings("unchecked")
