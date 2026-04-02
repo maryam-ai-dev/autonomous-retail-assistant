@@ -1,5 +1,7 @@
 package com.aisleon.cart.application;
 
+import com.aisleon.approval.application.ApprovalService;
+import com.aisleon.approval.domain.ApprovalRequest;
 import com.aisleon.cart.domain.Cart;
 import com.aisleon.cart.domain.CartItem;
 import com.aisleon.cart.domain.CartStatus;
@@ -23,6 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -37,16 +40,19 @@ public class CartService {
     private final MerchantRepository merchantRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final PolicyEvaluationService policyEvaluationService;
+    private final ApprovalService approvalService;
 
     public CartService(CartRepository cartRepository,
                        RetailPreferencesRepository preferencesRepository,
                        MerchantRepository merchantRepository,
-                       ApplicationEventPublisher eventPublisher) {
+                       ApplicationEventPublisher eventPublisher,
+                       ApprovalService approvalService) {
         this.cartRepository = cartRepository;
         this.preferencesRepository = preferencesRepository;
         this.merchantRepository = merchantRepository;
         this.eventPublisher = eventPublisher;
         this.policyEvaluationService = new PolicyEvaluationService();
+        this.approvalService = approvalService;
     }
 
     public Cart getOrCreateCart(UUID userId) {
@@ -135,25 +141,28 @@ public class CartService {
         PolicyEvaluationResult evaluation = policyEvaluationService.evaluate(cart, policy);
 
         if (!evaluation.isAllowed()) {
-            return Map.of(
-                    "status", "BLOCKED",
-                    "reasons", evaluation.getBlockedReasons()
-            );
+            Map<String, Object> result = new HashMap<>();
+            result.put("outcome", "BLOCKED");
+            result.put("reasons", evaluation.getBlockedReasons());
+            return result;
         }
 
         if (evaluation.isRequiresApproval()) {
             String triggerReason = String.join("; ", evaluation.getWarnings());
+
+            ApprovalRequest approval = approvalService.createApprovalRequest(
+                    userId, cart.getId(), triggerReason, cart.getTotalAmount());
 
             eventPublisher.publishEvent(new ApprovalRequiredEvent(
                     cart.getId(), userId, cart.getTotalAmount(),
                     triggerReason, evaluation.getWarnings()
             ));
 
-            return Map.of(
-                    "status", "APPROVAL_REQUIRED",
-                    "triggerReason", triggerReason,
-                    "warnings", evaluation.getWarnings()
-            );
+            Map<String, Object> result = new HashMap<>();
+            result.put("outcome", "APPROVAL_REQUIRED");
+            result.put("approvalId", approval.getId().toString());
+            result.put("reasons", evaluation.getWarnings());
+            return result;
         }
 
         cart.setStatus(CartStatus.CHECKED_OUT);
@@ -165,10 +174,10 @@ public class CartService {
                 cart.getId(), userId, cart.getTotalAmount(), cart.getItems().size()
         ));
 
-        return Map.of(
-                "status", "CHECKED_OUT",
-                "totalAmount", cart.getTotalAmount()
-        );
+        Map<String, Object> result = new HashMap<>();
+        result.put("outcome", "CHECKED_OUT");
+        result.put("totalAmount", cart.getTotalAmount());
+        return result;
     }
 
     private PurchasePolicy buildPolicy(RetailPreferences preferences) {
