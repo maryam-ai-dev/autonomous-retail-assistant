@@ -37,15 +37,15 @@ public class RetailPreferencesJpaEntity {
     private BigDecimal budgetCap;
 
     @JdbcTypeCode(SqlTypes.ARRAY)
-    @Column(name = "preferred_brands", columnDefinition = "TEXT[]")
+    @Column(name = "preferred_brands")
     private List<String> preferredBrands;
 
     @JdbcTypeCode(SqlTypes.ARRAY)
-    @Column(name = "blocked_brands", columnDefinition = "TEXT[]")
+    @Column(name = "blocked_brands")
     private List<String> blockedBrands;
 
     @JdbcTypeCode(SqlTypes.ARRAY)
-    @Column(name = "blocked_categories", columnDefinition = "TEXT[]")
+    @Column(name = "blocked_categories")
     private List<String> blockedCategories;
 
     @Column(name = "allow_substitutions")

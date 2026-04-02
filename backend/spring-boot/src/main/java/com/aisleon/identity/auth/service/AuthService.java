@@ -5,6 +5,7 @@ import com.aisleon.identity.auth.dto.LoginRequest;
 import com.aisleon.identity.auth.dto.RegisterRequest;
 import com.aisleon.identity.auth.repository.User;
 import com.aisleon.identity.auth.repository.UserRepository;
+import com.aisleon.preferences.application.RetailPreferencesService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -14,13 +15,16 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final RetailPreferencesService preferencesService;
 
     public AuthService(UserRepository userRepository,
                        PasswordEncoder passwordEncoder,
-                       JwtService jwtService) {
+                       JwtService jwtService,
+                       RetailPreferencesService preferencesService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
+        this.preferencesService = preferencesService;
     }
 
     public AuthResponse register(RegisterRequest request) {
@@ -39,6 +43,7 @@ public class AuthService {
                 .build();
 
         User saved = userRepository.save(user);
+        preferencesService.createDefaultPreferences(saved.getId());
         String token = jwtService.generateToken(saved.getId().toString());
 
         return AuthResponse.builder()
