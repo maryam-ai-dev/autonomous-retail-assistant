@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "NormalizedProduct",
+  "description": "A product normalised from any connector source into a common structure.",
+  "type": "object",
+  "properties": {
+    "sourceType": {
+      "type": "string",
+      "enum": ["API", "BROWSER", "FEED"]
+    },
+    "sourceName": { "type": "string" },
+    "externalProductId": { "type": "string" },
+    "title": { "type": "string" },
+    "description": { "type": "string" },
+    "category": { "type": "string" },
+    "brand": { "type": "string" },
+    "price": { "type": "number" },
+    "currency": { "type": "string" },
+    "availability": { "type": "string" },
+    "merchantId": { "type": ["string", "null"], "format": "uuid" },
+    "merchantName": { "type": "string" },
+    "merchantRating": { "type": ["number", "null"] },
+    "shippingCost": { "type": ["number", "null"] },
+    "shippingEta": { "type": ["string", "null"] },
+    "imageUrls": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "productUrl": { "type": "string" },
+    "attributes": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "lastSyncedAt": { "type": "string", "format": "date-time" }
+  },
+  "required": ["sourceType", "sourceName", "title", "price", "merchantName"]
+}
