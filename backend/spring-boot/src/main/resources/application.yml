@@ -1,3 +1,7 @@
 spring:
   application:
     name: aisleon
+
+jwt:
+  secret: ${JWT_SECRET}
+  expiration-hours: ${JWT_EXPIRATION_HOURS:72}
