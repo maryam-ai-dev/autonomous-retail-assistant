@@ -1,3 +1,9 @@
+import SignupForm from "@/features/auth/components/SignupForm";
+
 export default function SignupPage() {
-  return <div>Signup</div>;
+  return (
+    <div className="flex min-h-screen items-center justify-center">
+      <SignupForm />
+    </div>
+  );
 }
