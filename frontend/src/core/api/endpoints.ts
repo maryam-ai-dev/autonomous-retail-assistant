@@ -28,3 +28,7 @@ export const APPROVALS = {
 export const MERCHANTS = {
   BASE: "/api/merchants",
 } as const;
+
+export const AUDIT = {
+  BASE: "/api/audit",
+} as const;
