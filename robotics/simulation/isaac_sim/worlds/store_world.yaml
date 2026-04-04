@@ -1,0 +1,33 @@
+world_name: "Demo Retail Store"
+description: "A 20x15m single-floor retail store for the Aisleon robot simulation"
+
+dimensions:
+  width_m: 20
+  depth_m: 15
+  height_m: 4
+
+ground_plane:
+  enabled: true
+  material: "retail_floor_tile"
+  friction: 0.8
+
+lighting:
+  type: "indoor"
+  ambient_intensity: 0.4
+  ceiling_lights:
+    count: 12
+    intensity: 0.8
+    color: [1.0, 0.98, 0.95]
+    height_m: 3.8
+
+physics:
+  gravity: [0.0, 0.0, -9.81]
+  time_step: 0.01667  # 60 Hz
+  solver_iterations: 32
+  enable_gpu_dynamics: true
+
+camera:
+  default_view:
+    position: [10.0, 7.5, 12.0]
+    target: [10.0, 7.5, 0.0]
+    fov_deg: 60

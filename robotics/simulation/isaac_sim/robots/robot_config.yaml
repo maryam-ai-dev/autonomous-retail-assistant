@@ -1,0 +1,43 @@
+robot_name: "Aisleon Retail Robot"
+description: "Differential drive wheeled robot for in-store navigation and customer guidance"
+base_reference: "NVIDIA Isaac Sim Carter robot"
+
+chassis:
+  type: "differential_drive"
+  width_m: 0.5
+  length_m: 0.6
+  height_m: 0.4
+  wheel_radius_m: 0.1
+  wheel_separation_m: 0.45
+  max_linear_speed_m_s: 1.0
+  max_angular_speed_rad_s: 2.0
+
+sensors:
+  lidar:
+    type: "2D_lidar"
+    model: "RPLidar_A2"
+    mount_position: [0.0, 0.0, 0.35]
+    range_min_m: 0.15
+    range_max_m: 12.0
+    angle_min_deg: -180
+    angle_max_deg: 180
+    resolution_deg: 0.5
+    update_rate_hz: 10
+    topic: "/scan"
+
+  camera:
+    type: "RGB_depth"
+    model: "Intel_RealSense_D435"
+    mount_position: [0.25, 0.0, 0.45]
+    resolution: [640, 480]
+    fov_deg: 87
+    depth_range_m: [0.1, 10.0]
+    update_rate_hz: 30
+    rgb_topic: "/camera/color/image_raw"
+    depth_topic: "/camera/depth/image_rect_raw"
+
+navigation:
+  initial_position: [10.0, 1.0, 0.0]
+  initial_orientation_deg: 90
+  costmap_resolution_m: 0.05
+  inflation_radius_m: 0.3
