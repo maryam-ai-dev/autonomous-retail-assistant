@@ -6,8 +6,15 @@
   <description>store_map_service package for Aisleon retail robot</description>
   <maintainer email="maryam@aisleon.dev">Maryam Yousuf</maintainer>
   <license>Apache-2.0</license>
+
   <buildtool_depend>ament_python</buildtool_depend>
+
+  <depend>rclpy</depend>
+  <depend>std_msgs</depend>
+  <depend>retail_robot_interfaces</depend>
+
   <test_depend>ament_lint_auto</test_depend>
+
   <export>
     <build_type>ament_python</build_type>
   </export>
