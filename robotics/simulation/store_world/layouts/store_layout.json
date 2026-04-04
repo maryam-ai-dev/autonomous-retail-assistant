@@ -1,0 +1,75 @@
+{
+  "store_name": "Demo Retail Store",
+  "dimensions": {
+    "width_m": 20,
+    "depth_m": 15,
+    "height_m": 4
+  },
+  "zones": {
+    "entrance": {
+      "label": "Entrance",
+      "x_min": 8, "x_max": 12,
+      "y_min": 0, "y_max": 1
+    },
+    "checkout": {
+      "label": "Checkout Area",
+      "x_min": 0, "x_max": 20,
+      "y_min": 0, "y_max": 2
+    },
+    "staff_station": {
+      "label": "Staff Station",
+      "x_min": 18, "x_max": 20,
+      "y_min": 12, "y_max": 15
+    }
+  },
+  "aisles": [
+    {
+      "id": "A",
+      "label": "Aisle A",
+      "x_center": 2.0,
+      "y_start": 3.0,
+      "y_end": 12.0,
+      "shelves": [
+        { "id": "A1", "label": "A1", "x": 1.0, "y_start": 3.0, "y_end": 6.0, "side": "left" },
+        { "id": "A2", "label": "A2", "x": 3.0, "y_start": 3.0, "y_end": 6.0, "side": "right" },
+        { "id": "A3", "label": "A3", "x": 1.0, "y_start": 7.0, "y_end": 10.0, "side": "left" }
+      ]
+    },
+    {
+      "id": "B",
+      "label": "Aisle B",
+      "x_center": 7.0,
+      "y_start": 3.0,
+      "y_end": 12.0,
+      "shelves": [
+        { "id": "B1", "label": "B1", "x": 5.0, "y_start": 3.0, "y_end": 6.0, "side": "left" },
+        { "id": "B2", "label": "B2", "x": 7.0, "y_start": 3.0, "y_end": 6.0, "side": "right" },
+        { "id": "B3", "label": "B3", "x": 5.0, "y_start": 7.0, "y_end": 10.0, "side": "left" }
+      ]
+    },
+    {
+      "id": "C",
+      "label": "Aisle C",
+      "x_center": 12.0,
+      "y_start": 3.0,
+      "y_end": 12.0,
+      "shelves": [
+        { "id": "C1", "label": "C1", "x": 9.0, "y_start": 3.0, "y_end": 6.0, "side": "left" },
+        { "id": "C2", "label": "C2", "x": 11.0, "y_start": 3.0, "y_end": 6.0, "side": "right" },
+        { "id": "C3", "label": "C3", "x": 9.0, "y_start": 7.0, "y_end": 10.0, "side": "left" }
+      ]
+    },
+    {
+      "id": "D",
+      "label": "Aisle D",
+      "x_center": 17.0,
+      "y_start": 3.0,
+      "y_end": 12.0,
+      "shelves": [
+        { "id": "D1", "label": "D1", "x": 15.0, "y_start": 3.0, "y_end": 6.0, "side": "left" },
+        { "id": "D2", "label": "D2", "x": 17.0, "y_start": 3.0, "y_end": 6.0, "side": "right" },
+        { "id": "D3", "label": "D3", "x": 15.0, "y_start": 7.0, "y_end": 10.0, "side": "left" }
+      ]
+    }
+  ]
+}
