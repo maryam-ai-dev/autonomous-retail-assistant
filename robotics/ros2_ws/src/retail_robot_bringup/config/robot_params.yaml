@@ -1,0 +1,3 @@
+navigation_speed: 0.5
+handoff_confidence_threshold: 0.4
+store_name: "Demo Retail Store"

@@ -6,8 +6,17 @@
   <description>retail_robot_bringup package for Aisleon retail robot</description>
   <maintainer email="maryam@aisleon.dev">Maryam Yousuf</maintainer>
   <license>Apache-2.0</license>
+
   <buildtool_depend>ament_python</buildtool_depend>
+
+  <exec_depend>store_map_service</exec_depend>
+  <exec_depend>navigation_service</exec_depend>
+  <exec_depend>task_planner</exec_depend>
+  <exec_depend>human_handoff_service</exec_depend>
+  <exec_depend>simulation_bridge</exec_depend>
+
   <test_depend>ament_lint_auto</test_depend>
+
   <export>
     <build_type>ament_python</build_type>
   </export>
