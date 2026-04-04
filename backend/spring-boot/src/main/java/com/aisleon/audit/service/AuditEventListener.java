@@ -7,6 +7,8 @@ import com.aisleon.audit.repository.AuditEventJpaEntity;
 import com.aisleon.audit.repository.AuditRepository;
 import com.aisleon.cart.events.ApprovalRequiredEvent;
 import com.aisleon.cart.events.CartCheckedOutEvent;
+import com.aisleon.checkout.events.CheckoutCompletedEvent;
+import com.aisleon.checkout.events.CheckoutFailedEvent;
 import com.aisleon.common.events.ProductCandidatesRankedEvent;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
@@ -58,6 +60,18 @@ public class AuditEventListener {
     @Async("auditExecutor")
     public void onApprovalRequired(ApprovalRequiredEvent event) {
         saveEvent(event.userId(), "APPROVAL_REQUIRED", "cart", event.cartId().toString(), event);
+    }
+
+    @EventListener
+    @Async("auditExecutor")
+    public void onCheckoutCompleted(CheckoutCompletedEvent event) {
+        saveEvent(event.userId(), "CHECKOUT_COMPLETED", "checkout", event.orderId().toString(), event);
+    }
+
+    @EventListener
+    @Async("auditExecutor")
+    public void onCheckoutFailed(CheckoutFailedEvent event) {
+        saveEvent(event.userId(), "CHECKOUT_FAILED", "checkout", event.cartId().toString(), event);
     }
 
     @EventListener
