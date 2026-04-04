@@ -97,6 +97,13 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!-- Playwright (browser automation) -->
+        <dependency>
+            <groupId>com.microsoft.playwright</groupId>
+            <artifactId>playwright</artifactId>
+            <version>1.40.0</version>
+        </dependency>
+
         <!-- Test -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
