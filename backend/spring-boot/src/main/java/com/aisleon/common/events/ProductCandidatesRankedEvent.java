@@ -8,6 +8,7 @@ public record ProductCandidatesRankedEvent(
         String query,
         List<String> topProductTitles,
         double confidence,
-        String strategyUsed
+        String strategyUsed,
+        List<String> sourcesUsed
 ) {
 }

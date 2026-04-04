@@ -5,6 +5,8 @@ import com.aisleon.discovery.domain.DiscoveryResult;
 import com.aisleon.discovery.domain.NormalizedProduct;
 import com.aisleon.discovery.infrastructure.connectors.api.base.ApiConnectorResult;
 import com.aisleon.discovery.infrastructure.connectors.api.ebay.EbayApiConnector;
+import com.aisleon.discovery.infrastructure.connectors.browser.base.BrowserConnectorResult;
+import com.aisleon.discovery.infrastructure.connectors.browser.playwright.PlaywrightBrowserConnector;
 import com.aisleon.discovery.infrastructure.normalization.ProductNormalizationService;
 import com.aisleon.preferences.domain.RetailPreferences;
 import org.slf4j.Logger;
@@ -14,8 +16,10 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 public class ConnectorSelectionService {
@@ -24,15 +28,18 @@ public class ConnectorSelectionService {
     private static final int MIN_API_RESULTS = 3;
 
     private final EbayApiConnector ebayApiConnector;
+    private final PlaywrightBrowserConnector browserConnector;
     private final ProductNormalizationService normalizationService;
     private final PythonAiServiceClient pythonAiServiceClient;
     private final ApplicationEventPublisher eventPublisher;
 
     public ConnectorSelectionService(EbayApiConnector ebayApiConnector,
+                                     PlaywrightBrowserConnector browserConnector,
                                      ProductNormalizationService normalizationService,
                                      PythonAiServiceClient pythonAiServiceClient,
                                      ApplicationEventPublisher eventPublisher) {
         this.ebayApiConnector = ebayApiConnector;
+        this.browserConnector = browserConnector;
         this.normalizationService = normalizationService;
         this.pythonAiServiceClient = pythonAiServiceClient;
         this.eventPublisher = eventPublisher;
@@ -52,9 +59,20 @@ public class ConnectorSelectionService {
         }
 
         if (!ebayResult.success() || ebayResult.products().size() < MIN_API_RESULTS) {
-            log.warn("eBay returned fewer than {} results — browser fallback is a stub (no-op)",
-                    MIN_API_RESULTS);
-            // Browser fallback stub — will be replaced in Sprint 16
+            log.info("eBay returned {} results (min {}) — triggering browser fallback",
+                    ebayResult.products().size(), MIN_API_RESULTS);
+
+            BrowserConnectorResult browserResult = browserConnector.search(query, preferences);
+
+            if (browserResult.success()) {
+                List<NormalizedProduct> deduplicated = deduplicateProducts(
+                        allProducts, browserResult.products());
+                allProducts.addAll(deduplicated);
+                sourcesUsed.add(browserResult.sourceName());
+                log.info("Browser fallback added {} products (after dedup)", deduplicated.size());
+            } else {
+                log.warn("Browser fallback also failed: {}", browserResult.errorMessage());
+            }
         }
 
         List<NormalizedProduct> normalized = normalizationService.normalize(allProducts);
@@ -79,7 +97,8 @@ public class ConnectorSelectionService {
                 query,
                 topTitles,
                 ranked.getConfidence(),
-                ranked.getStrategyUsed()
+                ranked.getStrategyUsed(),
+                sourcesUsed
         ));
 
         return new DiscoveryResult(
@@ -92,5 +111,38 @@ public class ConnectorSelectionService {
                 ranked.getUncertainty(),
                 ranked.getRankedProducts()
         );
+    }
+
+    /**
+     * Filters browser products that duplicate existing products by externalProductId
+     * or by title similarity (case-insensitive containment).
+     */
+    private List<NormalizedProduct> deduplicateProducts(
+            List<NormalizedProduct> existing,
+            List<NormalizedProduct> incoming) {
+
+        Set<String> existingIds = new HashSet<>();
+        Set<String> existingTitlesLower = new HashSet<>();
+
+        for (NormalizedProduct p : existing) {
+            if (p.externalProductId() != null) {
+                existingIds.add(p.externalProductId());
+            }
+            existingTitlesLower.add(p.title().toLowerCase());
+        }
+
+        List<NormalizedProduct> unique = new ArrayList<>();
+        for (NormalizedProduct p : incoming) {
+            if (p.externalProductId() != null && existingIds.contains(p.externalProductId())) {
+                continue;
+            }
+            String titleLower = p.title().toLowerCase();
+            boolean titleDuplicate = existingTitlesLower.stream()
+                    .anyMatch(t -> t.contains(titleLower) || titleLower.contains(t));
+            if (!titleDuplicate) {
+                unique.add(p);
+            }
+        }
+        return unique;
     }
 }
