@@ -67,7 +67,6 @@ aisleon/
 ├── docs/                  # Architecture docs, trust model, ADRs
 ├── scenarios/             # End-to-end scenario descriptions
 ├── docker-compose.yml     # Local development orchestration
-└── sprint-plan-final.md   # Full sprint plan (18 sprints)
 ```
 
 ## Quick Start
