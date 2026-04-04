@@ -3,6 +3,7 @@
 from fastapi import FastAPI
 
 from app.api.ranking_router import router as ranking_router
+from app.api.substitution_router import router as substitution_router
 
 app = FastAPI(
     title="Aisleon AI Service",
@@ -11,6 +12,7 @@ app = FastAPI(
 )
 
 app.include_router(ranking_router)
+app.include_router(substitution_router)
 
 
 @app.get("/health")
