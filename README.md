@@ -145,11 +145,11 @@ The Spring Boot backend uses two modelling approaches:
 
 The system enforces five core trust rules:
 
-1. **Every product gets a trust score** — combining merchant reliability, constraint satisfaction, substitution risk, and recommendation confidence into an overall score
-2. **Purchases above threshold require approval** — if the cart total exceeds the user's approval threshold, checkout is blocked until explicitly approved
-3. **Unapproved merchants trigger warnings** — items from merchants not on the approved list generate policy warnings
-4. **Unsafe substitutions are flagged** — if a substitute product changes brand or increases price by more than 10%, it requires approval
-5. **Every action is auditable** — searches, cart changes, approvals, and checkouts are recorded as timestamped domain events
+1. **Every product gets a trust score** - combining merchant reliability, constraint satisfaction, substitution risk, and recommendation confidence into an overall score
+2. **Purchases above threshold require approval** - if the cart total exceeds the user's approval threshold, checkout is blocked until explicitly approved
+3. **Unapproved merchants trigger warnings** - items from merchants not on the approved list generate policy warnings
+4. **Unsafe substitutions are flagged** - if a substitute product changes brand or increases price by more than 10%, it requires approval
+5. **Every action is auditable** - searches, cart changes, approvals, and checkouts are recorded as timestamped domain events
 
 ## Scenarios
 
