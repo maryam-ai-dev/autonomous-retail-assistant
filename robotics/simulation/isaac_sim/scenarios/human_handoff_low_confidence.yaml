@@ -1,0 +1,32 @@
+scenario_name: "Human Handoff on Low Confidence"
+description: >
+  Robot receives a GuideCustomer goal for an unknown product. ShelfLookup returns
+  found=false, triggering a failure path. The task planner aborts the action and
+  the robot signals that staff assistance is needed.
+
+initial_robot_position:
+  x: 10.0
+  y: 1.0
+  theta_deg: 90
+
+trigger_product_id: "PROD_UNKNOWN_999"
+trigger_customer_id: "USER_001"
+
+expected_handoff_reason: "Product not found in store map"
+
+expected_outcome: >
+  ShelfLookup returns found=false for PROD_UNKNOWN_999.
+  GuideCustomer action returns success=false, final_status=PRODUCT_NOT_FOUND.
+  If navigation were attempted and failed, a HandoffRequest would be published
+  to /handoff/request and the robot status would transition to WAITING_FOR_STAFF.
+
+success_criteria:
+  - "ShelfLookup returns found=false for PROD_UNKNOWN_999"
+  - "GuideCustomer result: success=false, final_status=PRODUCT_NOT_FOUND"
+  - "No navigation task is published (product location unknown)"
+  - "Robot remains at initial position"
+
+ros2_trigger: >
+  ros2 action send_goal /guide_customer
+  retail_robot_interfaces/action/GuideCustomer
+  "{product_id: 'PROD_UNKNOWN_999', customer_id: 'USER_001'}"
