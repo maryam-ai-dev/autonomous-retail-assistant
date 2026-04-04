@@ -4,15 +4,15 @@ A trust-aware autonomous retail assistant with a software-first architecture and
 
 ## Overview
 
-Aisleon is a multi-service system that autonomously discovers, evaluates, and purchases retail products on behalf of users while enforcing trust constraints at every step. Unlike conventional shopping assistants, Aisleon treats every purchase decision as a trust decision — products are ranked by trust scores, purchases require policy-based approval, and every action is audit-logged. The system extends into a simulated robotics layer where a ROS 2 robot navigates a virtual store to guide customers to products.
+Aisleon is a multi-service system that autonomously discovers, evaluates, and purchases retail products on behalf of users while enforcing trust constraints at every step. Unlike conventional shopping assistants, Aisleon treats every purchase decision as a trust decision - products are ranked by trust scores, purchases require policy-based approval, and every action is audit-logged. The system extends into a simulated robotics layer where a ROS 2 robot navigates a virtual store to guide customers to products.
 
 ## Key Highlights
 
-- **Trust-first purchasing** — every product is scored for trust (merchant reliability, constraint satisfaction, substitution risk) before it reaches the user
-- **Policy-enforced approvals** — purchases that exceed budget thresholds or involve unapproved merchants are held for explicit user approval
-- **Full audit trail** — every search, cart action, approval decision, and checkout is recorded as a domain event
-- **Dual-connector discovery** — eBay API connector with Playwright browser fallback for resilient product sourcing
-- **Simulated robotics** — ROS 2 navigation stack with Isaac Sim integration for in-store customer guidance scenarios
+- **Trust-first purchasing** - every product is scored for trust (merchant reliability, constraint satisfaction, substitution risk) before it reaches the user
+- **Policy-enforced approvals** - purchases that exceed budget thresholds or involve unapproved merchants are held for explicit user approval
+- **Full audit trail** - every search, cart action, approval decision, and checkout is recorded as a domain event
+- **Dual-connector discovery** - eBay API connector with Playwright browser fallback for resilient product sourcing
+- **Simulated robotics** - ROS 2 navigation stack with Isaac Sim integration for in-store customer guidance scenarios
 
 ## System Overview
 
@@ -153,10 +153,10 @@ The system enforces five core trust rules:
 
 ## Scenarios
 
-- [Guided Product Search](scenarios/guided-product-search.md) — search, rank, trust-score, and display products
-- [Approval-Required Purchase](scenarios/approval-required-purchase.md) — policy triggers, approval flow, checkout
-- [Unsafe Substitution Blocked](scenarios/unsafe-substitution-blocked.md) — substitution analysis and risk detection
-- [Robot Guides Customer to Aisle](scenarios/robot-guides-customer-to-aisle.md) — ROS 2 navigation and handoff
+- [Guided Product Search](scenarios/guided-product-search.md) - search, rank, trust-score, and display products
+- [Approval-Required Purchase](scenarios/approval-required-purchase.md) - policy triggers, approval flow, checkout
+- [Unsafe Substitution Blocked](scenarios/unsafe-substitution-blocked.md) - substitution analysis and risk detection
+- [Robot Guides Customer to Aisle](scenarios/robot-guides-customer-to-aisle.md) - ROS 2 navigation and handoff
 
 ## Isaac Sim
 
@@ -171,4 +171,4 @@ See [robotics/simulation/isaac_sim/worlds/README.md](robotics/simulation/isaac_s
 
 ## License
 
-[Apache License 2.0](LICENSE) — Copyright 2026 Maryam Yousuf
+[Apache License 2.0](LICENSE) - Copyright 2026 Maryam Yousuf
