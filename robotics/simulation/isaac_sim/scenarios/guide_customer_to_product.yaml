@@ -1,0 +1,30 @@
+scenario_name: "Guide Customer to Product"
+description: >
+  Robot receives a GuideCustomer goal, looks up the product location via ShelfLookup,
+  navigates to the shelf, and reports success. Demonstrates the full happy-path flow
+  from task assignment through navigation completion.
+
+initial_robot_position:
+  x: 10.0
+  y: 1.0
+  theta_deg: 90
+
+target_product_id: "PROD_001"
+target_customer_id: "USER_001"
+
+expected_outcome: >
+  ShelfLookup returns found=true for PROD_001. NavigationTask is published.
+  Navigation status transitions ASSIGNED -> IN_PROGRESS -> COMPLETED.
+  GuideCustomer action returns success=true, final_status=COMPLETED.
+
+success_criteria:
+  - "ShelfLookup returns found=true with aisle and coordinates"
+  - "NavigationTask published to /navigation/task"
+  - "/navigation/status shows ASSIGNED, then IN_PROGRESS, then COMPLETED"
+  - "GuideCustomer result: success=true, final_status=COMPLETED"
+  - "Robot pose on /robot/pose reaches destination coordinates"
+
+ros2_trigger: >
+  ros2 action send_goal /guide_customer
+  retail_robot_interfaces/action/GuideCustomer
+  "{product_id: 'PROD_001', customer_id: 'USER_001'}"
