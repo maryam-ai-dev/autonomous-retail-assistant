@@ -8,12 +8,13 @@ target/
 *.ear
 *.log
 .mvn/timing.properties
-.mvn/wrapper/maven-wrapper.jar
 pom.xml.tag
 pom.xml.releaseBackup
 pom.xml.versionsBackup
 pom.xml.next
 release.properties
+
+# Do NOT ignore .mvn/wrapper/ — Maven wrapper files are needed for ./mvnw
 
 # ========================
 # Python / virtualenv
@@ -31,7 +32,6 @@ pip-delete-this-directory.txt
 *.egg-info/
 *.egg
 dist/
-build/
 .eggs/
 .pytest_cache/
 .mypy_cache/
@@ -48,15 +48,11 @@ yarn-debug.log*
 yarn-error.log*
 .pnp/
 .pnp.js
+.env.local
 
 # ========================
 # ROS 2 / colcon
 # ========================
-build/
-install/
-log/
-*.pyc
-*.dSYM/
 ros2_ws/build/
 ros2_ws/install/
 ros2_ws/log/
@@ -64,18 +60,18 @@ ros2_ws/log/
 # ========================
 # Isaac Sim
 # ========================
-*.usd
+*.usd~
 *.usda
 *.usdc
 *.usdz
 _isaac_sim/
+kit/cache/
 *.ov
 
 # ========================
 # Environment / secrets
 # ========================
 .env
-.env.local
 .env.*.local
 
 # ========================
