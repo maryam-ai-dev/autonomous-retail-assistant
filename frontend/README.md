@@ -1,36 +1,70 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Frontend
 
-## Getting Started
+Next.js 15 dashboard for the Aisleon trust-aware retail assistant.
 
-First, run the development server:
+## App Router Structure
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+The frontend uses the Next.js App Router with a `(dashboard)` route group for authenticated pages. The route group does not appear in URLs.
+
+```
+src/app/
+├── (dashboard)/
+│   ├── layout.tsx            # Sidebar + main content layout
+│   ├── search/               # /search — product discovery
+│   ├── cart/                  # /cart — cart management
+│   ├── approvals/            # /approvals — approval queue
+│   ├── trust/                # /trust — trust center (merchants, budget, substitution)
+│   ├── audit-log/            # /audit-log — event timeline
+│   ├── preferences/          # /preferences — retail preferences
+│   ├── profile/              # /profile — user profile
+│   ├── recommendations/      # /recommendations — product recommendations
+│   └── robotics-simulation/  # /robotics-simulation — ROS 2 robot dashboard
+├── login/                    # /login — authentication
+├── signup/                   # /signup — registration
+└── page.tsx                  # / — landing page
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Feature-First Organisation
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Components, hooks, services, and types are grouped by feature under `src/features/`:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+src/features/
+├── auth/                     # Login, signup, auth service
+├── product-search/           # Search form, results grid, product cards
+├── cart/                     # Cart items, summary, checkout
+├── approvals/                # Approval queue, detail modal
+├── trust-center/             # Merchant list, budget, substitution settings
+├── audit-log/                # Event timeline, type filters
+├── profile/                  # Profile display and edit
+├── retail-preferences/       # Preferences form
+├── recommendations/          # Recommendation panel
+└── robotics-simulation/      # Store map, navigation tracker, task controls
+```
 
-## Learn More
+Shared UI primitives live in `src/shared/ui/`. API client and endpoint definitions live in `src/core/api/`.
 
-To learn more about Next.js, take a look at the following resources:
+## Running Locally
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+npm install
+npm run dev
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+The app starts at `http://localhost:3000`. Requires the Spring Boot backend at the URL specified in `NEXT_PUBLIC_API_URL`.
 
-## Deploy on Vercel
+## Environment Variables
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `NEXT_PUBLIC_API_URL` | Spring Boot backend base URL | `http://localhost:8080` |
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Auth tokens are stored in cookies (`auth_token`), not localStorage. The middleware reads cookies server-side for route protection.
+
+## Key Conventions
+
+- **TypeScript strict mode** — no `any` types unless commented
+- **Functional components only** — no class components
+- **Tailwind CSS only** — no inline styles
+- **API calls through `src/core/api/client.ts`** — never call `fetch` directly in components (the robotics simulation service is an exception as it connects to the ROS 2 bridge, not the Spring Boot API)
+- **Endpoints in `src/core/api/endpoints.ts`** — no hardcoded URLs in components
