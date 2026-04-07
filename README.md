@@ -1,10 +1,10 @@
-# Leon
+# Aisleon
 
 A trust-aware autonomous retail assistant with a software-first architecture and simulated robotics extension.
 
 ## Overview
 
-Leon is a multi-service system that autonomously discovers, evaluates, and purchases retail products on behalf of users while enforcing trust constraints at every step. Unlike conventional shopping assistants, Leon treats every purchase decision as a trust decision - products are ranked by trust scores, purchases require policy-based approval, and every action is audit-logged. The system extends into a simulated robotics layer where a ROS 2 robot navigates a virtual store to guide customers to products.
+Aisleon is a multi-service system that autonomously discovers, evaluates, and purchases retail products on behalf of users while enforcing trust constraints at every step. Unlike conventional shopping assistants, Leon treats every purchase decision as a trust decision - products are ranked by trust scores, purchases require policy-based approval, and every action is audit-logged. The system extends into a simulated robotics layer where a ROS 2 robot navigates a virtual store to guide customers to products.
 
 ## Key Highlights
 
