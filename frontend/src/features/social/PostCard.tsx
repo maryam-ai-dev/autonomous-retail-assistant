@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Avatar } from "@/shared/ui/Avatar";
@@ -9,6 +10,7 @@ import { RetailerBadge } from "@/shared/ui/RetailerBadge";
 import type { components } from "@/types/api.generated";
 import type { DietaryTag } from "@/lib/dietary";
 import { DIETARY_UI } from "@/lib/dietary";
+import { toggleReaction } from "./reactions";
 
 type Post = components["schemas"]["PostDto"];
 
@@ -30,13 +32,26 @@ export function PostCard({ post, onAddToBasket }: PostCardProps) {
   const dietaryBadges = (product?.dietaryTags ?? []).filter(
     (tag): tag is DietaryTag => tag in DIETARY_UI,
   );
-  const reactionTotal = (post.reactions ?? []).reduce(
-    (sum, r) => sum + (r.count ?? 0),
-    0,
-  );
+  const [reacted, setReacted] = useState<boolean>(false);
+  const [reactionDelta, setReactionDelta] = useState<number>(0);
+  const reactionTotal =
+    (post.reactions ?? []).reduce((sum, r) => sum + (r.count ?? 0), 0) +
+    reactionDelta;
   const topReaction = (post.reactions ?? [])
     .slice()
     .sort((a, b) => (b.count ?? 0) - (a.count ?? 0))[0];
+
+  async function handleToggleReaction() {
+    if (!topReaction) return;
+    const nextReacted = !reacted;
+    setReacted(nextReacted);
+    setReactionDelta((prev) => prev + (nextReacted ? 1 : -1));
+    const result = await toggleReaction(post.id, topReaction.type);
+    if (!result.ok) {
+      setReacted(!nextReacted);
+      setReactionDelta((prev) => prev + (nextReacted ? -1 : 1));
+    }
+  }
 
   const handleBuildSimilar = () => {
     if (!basket) return;
@@ -90,10 +105,23 @@ export function PostCard({ post, onAddToBasket }: PostCardProps) {
           className="flex items-center gap-4"
           style={{ color: "var(--muted)" }}
         >
-          {reactionTotal > 0 ? (
-            <span>
-              {reactionTotal} {REACTION_LABELS[topReaction?.type ?? ""] ?? "reactions"}
-            </span>
+          {topReaction ? (
+            <button
+              type="button"
+              onClick={handleToggleReaction}
+              aria-pressed={reacted}
+              className="inline-flex items-center gap-1 font-semibold"
+              style={{
+                color: reacted ? "var(--clay)" : "var(--muted)",
+                minHeight: 36,
+              }}
+            >
+              <span aria-hidden="true">♥</span>
+              <span>
+                {reactionTotal}{" "}
+                {REACTION_LABELS[topReaction.type] ?? "reactions"}
+              </span>
+            </button>
           ) : null}
           <Link
             href={`/social/${encodeURIComponent(post.id)}`}
