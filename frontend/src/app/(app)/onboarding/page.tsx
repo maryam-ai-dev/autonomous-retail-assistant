@@ -8,8 +8,11 @@ import {
   BudgetQualityStep,
   DietaryStep,
   HouseholdStep,
+  IntentStep,
   PriorityModeStep,
+  ValuesStep,
 } from "@/features/onboarding/steps";
+import { saveTasteProfile } from "@/features/onboarding/save";
 import {
   DEFAULT_ANSWERS,
   sanitizeAnswers,
@@ -80,6 +83,8 @@ const STEP_TITLES: Record<number, string> = {
 export default function OnboardingPage() {
   const router = useRouter();
   const [state, setState] = useState<OnboardingState>(DEFAULT_STATE);
+  const [toast, setToast] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     const restored = readFromStorage();
@@ -116,10 +121,20 @@ export default function OnboardingPage() {
     setState((prev) => ({ ...prev, step: Math.min(TOTAL_STEPS, prev.step + 1) }));
   }, []);
 
-  const onComplete = useCallback(() => {
+  const onComplete = useCallback(async () => {
+    setSubmitting(true);
+    const result = await saveTasteProfile(state.answers);
+    if (result === "fallback") {
+      setToast("Saved locally — will sync when back online");
+    }
     clearStorage();
-    router.push("/home");
-  }, [router]);
+    const params = new URLSearchParams();
+    if (state.answers.intentText.trim()) {
+      params.set("intent", state.answers.intentText.trim());
+    }
+    const query = params.toString();
+    router.push(query ? `/home?${query}` : "/home");
+  }, [router, state.answers]);
 
   const isLast = state.step === TOTAL_STEPS;
   const canSkip = state.step === SKIP_STEP;
@@ -159,6 +174,20 @@ export default function OnboardingPage() {
           <BrandsStep
             value={state.answers.brands}
             onChange={(next) => updateAnswers("brands", next)}
+          />
+        );
+      case 6:
+        return (
+          <ValuesStep
+            value={state.answers.values}
+            onChange={(next) => updateAnswers("values", next)}
+          />
+        );
+      case 7:
+        return (
+          <IntentStep
+            value={state.answers.intentText}
+            onChange={(next) => updateAnswers("intentText", next)}
           />
         );
       default:
@@ -233,11 +262,31 @@ export default function OnboardingPage() {
         <Button
           variant="primary"
           onClick={isLast ? onComplete : goNext}
+          disabled={submitting}
           aria-label={isLast ? "Finish" : "Next"}
         >
-          {isLast ? "Finish" : "Next"}
+          {isLast
+            ? submitting
+              ? "Saving…"
+              : "Finish"
+            : "Next"}
         </Button>
       </div>
+
+      {toast ? (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed inset-x-0 bottom-20 z-50 mx-auto max-w-md rounded-full px-4 py-2 text-center text-xs"
+          style={{
+            background: "var(--amber-light)",
+            color: "#6B2A11",
+            border: "1px solid var(--amber)",
+          }}
+        >
+          {toast}
+        </div>
+      ) : null}
     </div>
   );
 }

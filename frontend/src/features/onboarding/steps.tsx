@@ -6,6 +6,7 @@ import {
   BRAND_CHIPS,
   HOUSEHOLDS,
   PRIORITY_MODES,
+  VALUE_CHIPS,
   type DietaryAnswers,
   type HouseholdKey,
   type PriorityKey,
@@ -178,6 +179,70 @@ export function BrandsStep({
           </button>
         );
       })}
+    </div>
+  );
+}
+
+export function ValuesStep({
+  value,
+  onChange,
+}: ValueStepProps<string[]>) {
+  const toggle = (key: string) => {
+    const on = value.includes(key);
+    onChange(on ? value.filter((v) => v !== key) : [...value, key]);
+  };
+  return (
+    <div className="flex flex-wrap gap-2" role="group" aria-label="Values">
+      {VALUE_CHIPS.map((v) => {
+        const on = value.includes(v.key);
+        return (
+          <button
+            key={v.key}
+            type="button"
+            aria-pressed={on}
+            onClick={() => toggle(v.key)}
+            className="inline-flex items-center rounded-full px-3 py-2 text-xs font-medium"
+            style={{
+              background: on ? "var(--sage-light)" : "var(--cream)",
+              border: `1px solid ${on ? "var(--sage)" : "var(--border)"}`,
+              color: on ? "#35502B" : "var(--aubergine)",
+              minHeight: 36,
+            }}
+          >
+            {v.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+export function IntentStep({
+  value,
+  onChange,
+}: ValueStepProps<string>) {
+  return (
+    <div className="flex flex-col gap-2">
+      <label
+        htmlFor="onboarding-intent"
+        className="text-sm font-medium"
+        style={{ color: "var(--aubergine)" }}
+      >
+        What do you need first?
+      </label>
+      <textarea
+        id="onboarding-intent"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="Weekly groceries under £70, halal"
+        rows={4}
+        className="w-full rounded-xl px-4 py-3 text-sm outline-none"
+        style={{
+          background: "var(--cream)",
+          border: "1px solid var(--border)",
+          color: "var(--charcoal)",
+        }}
+      />
     </div>
   );
 }

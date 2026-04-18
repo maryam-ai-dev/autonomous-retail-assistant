@@ -74,6 +74,17 @@ export function sanitizeAnswers(raw: unknown): OnboardingAnswers {
   };
 }
 
+export const VALUE_CHIPS = [
+  { key: "british", label: "British-grown" },
+  { key: "fairtrade", label: "Fairtrade" },
+  { key: "organic", label: "Certified organic" },
+  { key: "cruelty_free", label: "Cruelty-free" },
+  { key: "recyclable", label: "Minimal packaging" },
+  { key: "local", label: "Local / independent" },
+  { key: "seasonal", label: "Seasonal" },
+  { key: "plant_based", label: "Plant-based" },
+] as const;
+
 export const BRAND_CHIPS = [
   "Tesco own",
   "Sainsbury's own",
