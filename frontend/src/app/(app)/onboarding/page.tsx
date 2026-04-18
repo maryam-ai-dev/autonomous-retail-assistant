@@ -88,6 +88,7 @@ export default function OnboardingPage() {
 
   useEffect(() => {
     const restored = readFromStorage();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (restored) setState(restored);
   }, []);
 

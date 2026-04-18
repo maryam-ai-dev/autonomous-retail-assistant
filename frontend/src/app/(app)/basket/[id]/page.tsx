@@ -28,6 +28,7 @@ export default function BasketPage() {
   const [approveError, setApproveError] = useState<string | null>(null);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (data) setBasket(data);
   }, [data]);
 

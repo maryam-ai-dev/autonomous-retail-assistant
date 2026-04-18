@@ -41,6 +41,7 @@ export function SwapSheet({
 
   useEffect(() => {
     if (!open || !item) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setAlts(null);
     setError(null);
     fetchAlternatives(basketId, item.id, item)

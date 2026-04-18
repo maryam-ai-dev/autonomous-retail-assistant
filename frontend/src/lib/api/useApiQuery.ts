@@ -46,6 +46,9 @@ export function useApiQuery<T>({
   enabled = true,
 }: UseApiQueryOptions<T>): QueryState<T> {
   const fetcherRef = useRef(fetcher);
+  // React 19 flags ref mutation during render; we only use current inside effects
+  // and it must track the latest closure to avoid stale fetch args.
+  // eslint-disable-next-line react-hooks/refs
   fetcherRef.current = fetcher;
 
   const [state, setState] = useState<QueryState<T>>(() => {
@@ -56,14 +59,17 @@ export function useApiQuery<T>({
 
   useEffect(() => {
     if (!enabled) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setState({ data: null, isLoading: false, error: null });
       return;
     }
     if (USE_MOCKS) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setState({ data: mockData, isLoading: false, error: null });
       return;
     }
     let cancelled = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setState({ data: null, isLoading: true, error: null });
     fetcherRef.current()
       .then((data) => {

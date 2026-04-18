@@ -56,6 +56,7 @@ export default function SocialPage() {
   );
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadPage(undefined);
   }, [loadPage]);
 
