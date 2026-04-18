@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Avatar } from "@/shared/ui/Avatar";
 import { Button } from "@/shared/ui/Button";
 import { DietaryCertaintyBadge } from "@/shared/ui/DietaryCertaintyBadge";
@@ -23,7 +24,9 @@ const REACTION_LABELS: Record<string, string> = {
 };
 
 export function PostCard({ post, onAddToBasket }: PostCardProps) {
+  const router = useRouter();
   const product = post.product ?? null;
+  const basket = post.basket ?? null;
   const dietaryBadges = (product?.dietaryTags ?? []).filter(
     (tag): tag is DietaryTag => tag in DIETARY_UI,
   );
@@ -34,6 +37,14 @@ export function PostCard({ post, onAddToBasket }: PostCardProps) {
   const topReaction = (post.reactions ?? [])
     .slice()
     .sort((a, b) => (b.count ?? 0) - (a.count ?? 0))[0];
+
+  const handleBuildSimilar = () => {
+    if (!basket) return;
+    const params = new URLSearchParams();
+    const tags = basket.tags && basket.tags.length > 0 ? basket.tags.join(", ") : basket.title;
+    params.set("intent", tags);
+    router.push(`/home?${params.toString()}`);
+  };
 
   return (
     <article
@@ -67,10 +78,11 @@ export function PostCard({ post, onAddToBasket }: PostCardProps) {
       </p>
 
       {product ? (
-        <ProductCard
-          product={product}
-          dietaryBadges={dietaryBadges}
-        />
+        <ProductCard product={product} dietaryBadges={dietaryBadges} />
+      ) : null}
+
+      {basket && (basket.itemThumbnails ?? []).length > 0 ? (
+        <BasketPostCard basket={basket} onBuildSimilar={handleBuildSimilar} />
       ) : null}
 
       <footer className="flex items-center justify-between gap-3 text-xs">
@@ -149,6 +161,84 @@ function ProductCard({
           </div>
         ) : null}
       </div>
+    </div>
+  );
+}
+
+function BasketPostCard({
+  basket,
+  onBuildSimilar,
+}: {
+  basket: NonNullable<Post["basket"]>;
+  onBuildSimilar: () => void;
+}) {
+  const thumbnails = (basket.itemThumbnails ?? []).slice(0, 4);
+  while (thumbnails.length < 4) thumbnails.push("");
+  const dietary = basket.dietarySummary ?? null;
+  const hasPleaseVerify = Boolean(
+    dietary && (dietary.hasHalalLikely || dietary.hasHalalUnknown),
+  );
+  return (
+    <div
+      className="flex flex-col gap-3 rounded-xl p-3"
+      style={{
+        background: "var(--cream)",
+        border: "1px solid var(--border)",
+      }}
+    >
+      <div className="grid grid-cols-2 gap-2">
+        {thumbnails.map((src, idx) => (
+          <div
+            key={idx}
+            className="flex h-20 items-center justify-center overflow-hidden rounded-lg"
+            style={{
+              background: "var(--oat)",
+              border: "1px solid var(--border)",
+            }}
+          >
+            {src ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={src}
+                alt={`Basket item ${idx + 1}`}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <span aria-hidden="true" className="text-xl">
+                🛒
+              </span>
+            )}
+          </div>
+        ))}
+      </div>
+      <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-0.5">
+          <span
+            className="text-sm font-semibold"
+            style={{ color: "var(--aubergine)" }}
+          >
+            {basket.title}
+          </span>
+          {hasPleaseVerify ? (
+            <span className="text-xs" style={{ color: "#6B2A11" }}>
+              Contains items marked &lsquo;please verify&rsquo;
+            </span>
+          ) : null}
+        </div>
+        <span
+          className="rounded-full px-3 py-1 text-xs font-semibold"
+          style={{
+            background: "var(--clay-light)",
+            color: "var(--clay)",
+            fontVariantNumeric: "tabular-nums",
+          }}
+        >
+          £{basket.total.toFixed(2)}
+        </span>
+      </div>
+      <Button variant="secondary" onClick={onBuildSimilar}>
+        Build similar
+      </Button>
     </div>
   );
 }

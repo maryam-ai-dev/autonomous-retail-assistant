@@ -94,6 +94,12 @@ export interface components {
         title: string;
         total: number;
         itemThumbnails: string[];
+        dietarySummary?: {
+          hasHalalVerified: boolean;
+          hasHalalLikely: boolean;
+          hasHalalUnknown: boolean;
+        } | null;
+        tags?: string[];
       } | null;
       reactions: { type: ReactionType; count: number }[];
       commentCount: number;
