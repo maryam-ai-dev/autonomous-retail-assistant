@@ -130,6 +130,15 @@ export interface components {
       byRetailer: Partial<Record<RetailerKey, number>>;
       insights: string[];
     };
+    SharedBasketDto: {
+      shareId: string;
+      basket: components["schemas"]["BasketDto"];
+      poster: components["schemas"]["ProfileDto"];
+      title: string;
+      description?: string | null;
+      tags: string[];
+      estimatedSaving: number;
+    };
     ConnectorStatusDto: {
       retailer: RetailerKey;
       healthy: boolean;
