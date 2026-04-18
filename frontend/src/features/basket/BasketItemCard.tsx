@@ -25,15 +25,42 @@ export function BasketItemCard({
   const dietaryBadges = (item.dietaryTags ?? []).filter(
     (tag): tag is DietaryTag => tag in DIETARY_UI,
   );
+  const flagged = item.substitutionFlag ?? null;
 
   return (
     <li
-      className="flex gap-3 rounded-xl p-3"
+      className="flex flex-col gap-3 rounded-xl p-3"
       style={{
-        background: "var(--oat)",
-        border: "1px solid var(--border)",
+        background: flagged ? "var(--amber-light)" : "var(--oat)",
+        border: `1px solid ${flagged ? "var(--amber)" : "var(--border)"}`,
       }}
     >
+      {flagged ? (
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex flex-col gap-1">
+            <span
+              className="text-xs font-semibold uppercase tracking-wide"
+              style={{ color: "#6B2A11" }}
+            >
+              Substitution flagged
+            </span>
+            <p className="text-sm" style={{ color: "#6B2A11" }}>
+              {flagged.message}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => onSwap(item)}
+            aria-label={`See alternatives for ${item.name}`}
+            className="shrink-0 text-xs font-semibold"
+            style={{ color: "#6B2A11", minHeight: 44 }}
+          >
+            See alternatives →
+          </button>
+        </div>
+      ) : null}
+
+      <div className="flex gap-3">
       <Thumbnail imageUrl={item.imageUrl} alt={item.name} />
       <div className="flex flex-1 flex-col gap-1.5">
         <div className="flex items-start justify-between gap-2">
@@ -108,6 +135,7 @@ export function BasketItemCard({
             <span className="ml-1 text-xs font-medium">Remove</span>
           </button>
         </div>
+      </div>
       </div>
     </li>
   );

@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { BackButton, PageHeader } from "@/shared/layout/PageHeader";
 import { RetailerBadge } from "@/shared/ui/RetailerBadge";
+import { BasketApproveBar } from "@/features/basket/BasketApproveBar";
 import { BasketBudgetSummary } from "@/features/basket/BasketBudgetSummary";
 import { BasketItemCard } from "@/features/basket/BasketItemCard";
 import { SwapSheet } from "@/features/basket/SwapSheet";
@@ -148,6 +149,8 @@ export default function BasketPage() {
           </section>
         ))
       )}
+
+      <BasketApproveBar basket={basket} />
 
       <SwapSheet
         open={swapTarget !== null}
