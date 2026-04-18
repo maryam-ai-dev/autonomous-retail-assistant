@@ -4,6 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Avatar } from "@/shared/ui/Avatar";
+import { BottomSheet } from "@/shared/ui/BottomSheet";
+import { Button } from "@/shared/ui/Button";
 import { DietaryCertaintyBadge } from "@/shared/ui/DietaryCertaintyBadge";
 import { Tag } from "@/shared/ui/Tag";
 import { BackButton, PageHeader } from "@/shared/layout/PageHeader";
@@ -54,10 +56,81 @@ export default function ProfilePage() {
     <div className="flex flex-col gap-5">
       <PageHeader title="Profile" leftSlot={<BackButton />} />
       <ProfileHero profile={data} />
+      {data.isSelf ? <OwnProfileActions profile={data} /> : null}
       <ProfileStats profile={data} />
       <Tabs tab={tab} onChange={setTab} />
       <TabPanel tab={tab} />
       <TasteTags tags={MOCK_TASTE_TAGS} />
+    </div>
+  );
+}
+
+function OwnProfileActions({ profile }: { profile: Profile }) {
+  const [shareFallback, setShareFallback] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  async function handleShare() {
+    const url =
+      typeof window !== "undefined"
+        ? `${window.location.origin}/profile/${encodeURIComponent(profile.handle)}`
+        : `/profile/${profile.handle}`;
+    try {
+      if (typeof navigator !== "undefined" && navigator.clipboard) {
+        await navigator.clipboard.writeText(url);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+        return;
+      }
+    } catch {
+      // clipboard blocked — fall through to modal
+    }
+    setShareFallback(url);
+  }
+
+  return (
+    <div className="flex gap-2">
+      <Link
+        href="/settings"
+        className="inline-flex flex-1 items-center justify-center rounded-full text-sm font-semibold"
+        style={{
+          background: "var(--oat)",
+          border: "1px solid var(--border)",
+          color: "var(--aubergine)",
+          minHeight: 44,
+        }}
+      >
+        Edit profile
+      </Link>
+      <Button variant="secondary" onClick={handleShare}>
+        {copied ? "Copied" : "Share profile"}
+      </Button>
+      <BottomSheet
+        open={shareFallback !== null}
+        onClose={() => setShareFallback(null)}
+        title="Share your profile"
+      >
+        <div className="flex flex-col gap-3">
+          <p className="text-sm" style={{ color: "var(--muted)" }}>
+            Copy this link manually:
+          </p>
+          <p
+            className="break-all rounded-xl p-3 text-xs font-mono"
+            style={{
+              background: "var(--oat)",
+              border: "1px solid var(--border)",
+              color: "var(--aubergine)",
+            }}
+          >
+            {shareFallback}
+          </p>
+          <Button
+            variant="primary"
+            onClick={() => setShareFallback(null)}
+          >
+            Done
+          </Button>
+        </div>
+      </BottomSheet>
     </div>
   );
 }
