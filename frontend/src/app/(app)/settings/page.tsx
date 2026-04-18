@@ -10,6 +10,11 @@ import { Toggle } from "@/shared/ui/Toggle";
 import { BackButton, PageHeader } from "@/shared/layout/PageHeader";
 import apiClient from "@/core/api/client";
 import { logout } from "@/features/auth/services/auth-service";
+import {
+  DEFAULT_NOTIFICATIONS,
+  saveNotifications,
+  type NotificationPreferences,
+} from "@/features/settings/notifications";
 import { useCurrentUser } from "@/lib/api/useCurrentUser";
 
 const USE_MOCKS = process.env.NEXT_PUBLIC_USE_MOCKS === "true";
@@ -136,6 +141,8 @@ export default function SettingsPage() {
         />
       </section>
 
+      <NotificationSection />
+
       <section className="flex flex-col gap-3">
         <h2
           className="text-sm font-semibold uppercase tracking-wide"
@@ -153,6 +160,59 @@ export default function SettingsPage() {
         onClose={() => setDeleteOpen(false)}
       />
     </div>
+  );
+}
+
+function NotificationSection() {
+  const [prefs, setPrefs] = useState<NotificationPreferences>(DEFAULT_NOTIFICATIONS);
+
+  const items: {
+    key: keyof NotificationPreferences;
+    label: string;
+    description?: string;
+  }[] = [
+    { key: "newFollower", label: "New follower" },
+    { key: "basketComment", label: "Basket comment" },
+    { key: "helpfulReaction", label: "Helpful reaction" },
+    {
+      key: "weeklyBudgetSummary",
+      label: "Weekly budget summary",
+      description: "A once-a-week snapshot of your spending",
+    },
+  ];
+
+  async function handleToggle(
+    key: keyof NotificationPreferences,
+    next: boolean,
+  ) {
+    const previous = prefs[key];
+    setPrefs((p) => ({ ...p, [key]: next }));
+    const result = await saveNotifications({ ...prefs, [key]: next });
+    if (!result.ok) {
+      setPrefs((p) => ({ ...p, [key]: previous }));
+    }
+  }
+
+  return (
+    <section className="flex flex-col gap-3">
+      <h2
+        className="text-sm font-semibold uppercase tracking-wide"
+        style={{ color: "var(--muted)" }}
+      >
+        Notifications
+      </h2>
+      <div className="flex flex-col gap-3">
+        {items.map((item) => (
+          <Toggle
+            key={item.key}
+            label={item.label}
+            description={item.description}
+            checked={prefs[item.key]}
+            onChange={(next) => handleToggle(item.key, next)}
+          />
+        ))}
+      </div>
+    </section>
   );
 }
 
