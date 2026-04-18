@@ -8,7 +8,9 @@ import { RetailerBadge } from "@/shared/ui/RetailerBadge";
 import { BasketApproveBar } from "@/features/basket/BasketApproveBar";
 import { BasketBudgetSummary } from "@/features/basket/BasketBudgetSummary";
 import { BasketItemCard } from "@/features/basket/BasketItemCard";
+import { CheckoutActions } from "@/features/basket/CheckoutActions";
 import { SwapSheet } from "@/features/basket/SwapSheet";
+import { approveBasket } from "@/features/basket/checkout";
 import { useBasket } from "@/lib/api/useBasket";
 import type { components } from "@/types/api.generated";
 
@@ -22,6 +24,8 @@ export default function BasketPage() {
 
   const [basket, setBasket] = useState<Basket | null>(null);
   const [swapTarget, setSwapTarget] = useState<BasketItem | null>(null);
+  const [approving, setApproving] = useState(false);
+  const [approveError, setApproveError] = useState<string | null>(null);
 
   useEffect(() => {
     if (data) setBasket(data);
@@ -78,7 +82,26 @@ export default function BasketPage() {
     setSwapTarget(null);
   };
 
+  async function handleApprove() {
+    if (approving || !basket) return;
+    setApproving(true);
+    setApproveError(null);
+    const previousStatus = basket.status;
+    setBasket({ ...basket, status: "APPROVED" });
+    const result = await approveBasket(basket.id);
+    if (!result.ok) {
+      setBasket((prev) => (prev ? { ...prev, status: previousStatus } : prev));
+      setApproveError(result.message);
+    } else {
+      setBasket((prev) =>
+        prev ? { ...prev, status: result.basket.status } : prev,
+      );
+    }
+    setApproving(false);
+  }
+
   const groups = groupByRetailer(basket.items ?? []);
+  const isApproved = basket.status === "APPROVED" || basket.status === "CHECKED_OUT";
 
   return (
     <div className="flex flex-col gap-5">
@@ -150,7 +173,26 @@ export default function BasketPage() {
         ))
       )}
 
-      <BasketApproveBar basket={basket} />
+      {isApproved ? (
+        <CheckoutActions basket={basket} />
+      ) : (
+        <>
+          {approveError ? (
+            <p
+              role="alert"
+              className="text-sm"
+              style={{ color: "var(--amber)" }}
+            >
+              {approveError}
+            </p>
+          ) : null}
+          <BasketApproveBar
+            basket={basket}
+            onApprove={handleApprove}
+            approving={approving}
+          />
+        </>
+      )}
 
       <SwapSheet
         open={swapTarget !== null}
