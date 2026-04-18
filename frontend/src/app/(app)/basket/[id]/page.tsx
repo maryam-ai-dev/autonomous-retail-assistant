@@ -1,10 +1,13 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { BackButton, PageHeader } from "@/shared/layout/PageHeader";
 import { RetailerBadge } from "@/shared/ui/RetailerBadge";
 import { BasketBudgetSummary } from "@/features/basket/BasketBudgetSummary";
+import { BasketItemCard } from "@/features/basket/BasketItemCard";
+import { SwapSheet } from "@/features/basket/SwapSheet";
 import { useBasket } from "@/lib/api/useBasket";
 import type { components } from "@/types/api.generated";
 
@@ -16,13 +19,66 @@ export default function BasketPage() {
   const id = params?.id ?? "";
   const { data, isLoading, error } = useBasket(id);
 
-  if (isLoading) return <BasketSkeleton />;
-  if (error?.notFound || !data) return <BasketNotFound />;
-  return <BasketView basket={data} />;
-}
+  const [basket, setBasket] = useState<Basket | null>(null);
+  const [swapTarget, setSwapTarget] = useState<BasketItem | null>(null);
 
-function BasketView({ basket }: { basket: Basket }) {
+  useEffect(() => {
+    if (data) setBasket(data);
+  }, [data]);
+
+  if (isLoading && !basket) return <BasketSkeleton />;
+  if (error?.notFound || !basket) return <BasketNotFound />;
+
+  const updateQuantity = (itemId: string, quantity: number) => {
+    setBasket((prev) => {
+      if (!prev) return prev;
+      const items = prev.items.map((item) =>
+        item.id === itemId ? { ...item, quantity } : item,
+      );
+      return { ...prev, items, totalCost: totalCostOf(items) };
+    });
+  };
+
+  const removeItem = (itemId: string) => {
+    setBasket((prev) => {
+      if (!prev) return prev;
+      const items = prev.items.filter((item) => item.id !== itemId);
+      return { ...prev, items, totalCost: totalCostOf(items) };
+    });
+  };
+
+  const swapItem = (altProduct: {
+    productId: string;
+    name: string;
+    brand: string | null;
+    retailer: BasketItem["retailer"];
+    price: number;
+    whyThis: string;
+  }) => {
+    if (!swapTarget) return;
+    setBasket((prev) => {
+      if (!prev) return prev;
+      const items = prev.items.map((item) =>
+        item.id === swapTarget.id
+          ? {
+              ...item,
+              productId: altProduct.productId,
+              name: altProduct.name,
+              brand: altProduct.brand,
+              retailer: altProduct.retailer,
+              price: altProduct.price,
+              whyThis: altProduct.whyThis,
+              substitutionFlag: null,
+            }
+          : item,
+      );
+      return { ...prev, items, totalCost: totalCostOf(items) };
+    });
+    setSwapTarget(null);
+  };
+
   const groups = groupByRetailer(basket.items ?? []);
+
   return (
     <div className="flex flex-col gap-5">
       <PageHeader title="Your basket" leftSlot={<BackButton />} />
@@ -61,78 +117,46 @@ function BasketView({ basket }: { basket: Basket }) {
         <EmptyBasket />
       ) : (
         groups.map(({ retailer, items, subtotal }) => (
-          <RetailerSection
+          <section
             key={retailer}
-            retailer={retailer}
-            items={items}
-            subtotal={subtotal}
-          />
-        ))
-      )}
-    </div>
-  );
-}
-
-function RetailerSection({
-  retailer,
-  items,
-  subtotal,
-}: {
-  retailer: string;
-  items: BasketItem[];
-  subtotal: number;
-}) {
-  return (
-    <section
-      aria-label={`${retailer} items`}
-      className="flex flex-col gap-3"
-    >
-      <div className="flex items-center justify-between">
-        <RetailerBadge retailer={retailer} />
-        <span
-          className="text-sm font-medium"
-          style={{
-            color: "var(--aubergine)",
-            fontVariantNumeric: "tabular-nums",
-          }}
-        >
-          £{subtotal.toFixed(2)}
-        </span>
-      </div>
-      <ul className="flex flex-col gap-2">
-        {items.map((item) => (
-          <li
-            key={item.id}
-            className="flex items-center justify-between rounded-xl p-3"
-            style={{
-              background: "var(--oat)",
-              border: "1px solid var(--border)",
-            }}
+            aria-label={`${retailer} items`}
+            className="flex flex-col gap-3"
           >
-            <div className="flex flex-col gap-0.5">
+            <div className="flex items-center justify-between">
+              <RetailerBadge retailer={retailer} />
               <span
                 className="text-sm font-medium"
-                style={{ color: "var(--aubergine)" }}
+                style={{
+                  color: "var(--aubergine)",
+                  fontVariantNumeric: "tabular-nums",
+                }}
               >
-                {item.name}
-              </span>
-              <span className="text-xs" style={{ color: "var(--muted)" }}>
-                {item.brand ?? ""} · Qty {item.quantity}
+                £{subtotal.toFixed(2)}
               </span>
             </div>
-            <span
-              className="text-sm"
-              style={{
-                color: "var(--aubergine)",
-                fontVariantNumeric: "tabular-nums",
-              }}
-            >
-              £{(item.price * item.quantity).toFixed(2)}
-            </span>
-          </li>
-        ))}
-      </ul>
-    </section>
+            <ul className="flex flex-col gap-2">
+              {items.map((item) => (
+                <BasketItemCard
+                  key={item.id}
+                  item={item}
+                  onQuantityChange={updateQuantity}
+                  onRemove={removeItem}
+                  onSwap={(target) => setSwapTarget(target)}
+                />
+              ))}
+            </ul>
+          </section>
+        ))
+      )}
+
+      <SwapSheet
+        open={swapTarget !== null}
+        basketId={basket.id}
+        item={swapTarget}
+        onClose={() => setSwapTarget(null)}
+        onSelect={swapItem}
+      />
+    </div>
   );
 }
 
@@ -189,6 +213,15 @@ function EmptyBasket() {
   );
 }
 
+function totalCostOf(items: BasketItem[]): number {
+  return items.reduce(
+    (sum, item) =>
+      sum +
+      (Number.isFinite(item.price) ? item.price * item.quantity : 0),
+    0,
+  );
+}
+
 function groupByRetailer(items: BasketItem[]) {
   const map = new Map<string, BasketItem[]>();
   for (const item of items) {
@@ -200,11 +233,6 @@ function groupByRetailer(items: BasketItem[]) {
   return Array.from(map.entries()).map(([retailer, groupItems]) => ({
     retailer,
     items: groupItems,
-    subtotal: groupItems.reduce(
-      (sum, item) =>
-        sum +
-        (Number.isFinite(item.price) ? item.price * item.quantity : 0),
-      0,
-    ),
+    subtotal: totalCostOf(groupItems),
   }));
 }
