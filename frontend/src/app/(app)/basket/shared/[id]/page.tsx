@@ -20,6 +20,8 @@ import {
   forkSharedBasket,
   type SharedBasketResult,
 } from "@/features/shared-basket/fetch";
+import { FollowButton } from "@/features/social/FollowButton";
+import { saveBasket } from "@/features/social/follow";
 import { isAuthenticated } from "@/core/auth/session";
 import type { components } from "@/types/api.generated";
 
@@ -207,9 +209,14 @@ export default function SharedBasketPage() {
         ) : null}
       </section>
 
-      <Button variant="primary" fullWidth onClick={handleBuild}>
-        Build this basket for me
-      </Button>
+      <div className="flex flex-col gap-2">
+        <Button variant="primary" fullWidth onClick={handleBuild}>
+          Build this basket for me
+        </Button>
+        {isAuthenticated() ? (
+          <SaveBasketButton basketId={shared.basket.id} />
+        ) : null}
+      </div>
       {forkError ? (
         <p role="alert" className="text-xs" style={{ color: "var(--amber)" }}>
           {forkError}
@@ -311,12 +318,37 @@ function PosterHeader({ shared }: { shared: SharedBasket }) {
           @{shared.poster.handle}
         </span>
       </div>
-      {authed && !shared.poster.isSelf ? (
+      {authed ? (
         <div className="ml-auto">
-          <Button variant="secondary">Follow</Button>
+          <FollowButton
+            handle={shared.poster.handle}
+            isSelf={shared.poster.isSelf}
+          />
         </div>
       ) : null}
     </div>
+  );
+}
+
+function SaveBasketButton({ basketId }: { basketId: string }) {
+  const [saved, setSaved] = useState(false);
+  const [busy, setBusy] = useState(false);
+  async function handleClick() {
+    if (saved || busy) return;
+    setBusy(true);
+    const result = await saveBasket(basketId);
+    setBusy(false);
+    if (result.ok) setSaved(true);
+  }
+  return (
+    <Button
+      variant="secondary"
+      onClick={handleClick}
+      disabled={busy || saved}
+      aria-pressed={saved}
+    >
+      {saved ? "Saved" : busy ? "Saving…" : "Save basket"}
+    </Button>
   );
 }
 
