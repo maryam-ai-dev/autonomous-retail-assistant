@@ -1,8 +1,20 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/shared/ui/Button";
+import {
+  BrandsStep,
+  BudgetQualityStep,
+  DietaryStep,
+  HouseholdStep,
+  PriorityModeStep,
+} from "@/features/onboarding/steps";
+import {
+  DEFAULT_ANSWERS,
+  sanitizeAnswers,
+  type OnboardingAnswers,
+} from "@/features/onboarding/types";
 
 const STORAGE_KEY = "aisleon_onboarding_state";
 const TOTAL_STEPS = 7;
@@ -10,7 +22,12 @@ const SKIP_STEP = 6;
 
 type OnboardingState = {
   step: number;
-  answers: Record<string, unknown>;
+  answers: OnboardingAnswers;
+};
+
+const DEFAULT_STATE: OnboardingState = {
+  step: 1,
+  answers: DEFAULT_ANSWERS,
 };
 
 function readFromStorage(): OnboardingState | null {
@@ -19,13 +36,14 @@ function readFromStorage(): OnboardingState | null {
     const raw = window.sessionStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<OnboardingState>;
-    if (typeof parsed?.step === "number" && parsed.step >= 1 && parsed.step <= TOTAL_STEPS) {
-      return {
-        step: parsed.step,
-        answers: (parsed.answers as Record<string, unknown>) ?? {},
-      };
-    }
-    return null;
+    const step =
+      typeof parsed?.step === "number" && parsed.step >= 1 && parsed.step <= TOTAL_STEPS
+        ? parsed.step
+        : 1;
+    return {
+      step,
+      answers: sanitizeAnswers(parsed?.answers),
+    };
   } catch {
     return null;
   }
@@ -49,9 +67,19 @@ function clearStorage(): void {
   }
 }
 
+const STEP_TITLES: Record<number, string> = {
+  1: "What matters most?",
+  2: "Who are you shopping for?",
+  3: "Any dietary preferences?",
+  4: "Deal-hunter or trust-buyer?",
+  5: "Any brands you love?",
+  6: "Any values you care about?",
+  7: "What's your first basket?",
+};
+
 export default function OnboardingPage() {
   const router = useRouter();
-  const [state, setState] = useState<OnboardingState>({ step: 1, answers: {} });
+  const [state, setState] = useState<OnboardingState>(DEFAULT_STATE);
 
   useEffect(() => {
     const restored = readFromStorage();
@@ -61,6 +89,16 @@ export default function OnboardingPage() {
   useEffect(() => {
     writeToStorage(state);
   }, [state]);
+
+  const updateAnswers = useCallback(
+    <K extends keyof OnboardingAnswers>(key: K, value: OnboardingAnswers[K]) => {
+      setState((prev) => ({
+        ...prev,
+        answers: { ...prev.answers, [key]: value },
+      }));
+    },
+    [],
+  );
 
   const goBack = useCallback(() => {
     setState((prev) => ({ ...prev, step: Math.max(1, prev.step - 1) }));
@@ -85,6 +123,52 @@ export default function OnboardingPage() {
 
   const isLast = state.step === TOTAL_STEPS;
   const canSkip = state.step === SKIP_STEP;
+
+  const stepContent: ReactNode = (() => {
+    switch (state.step) {
+      case 1:
+        return (
+          <PriorityModeStep
+            value={state.answers.priority}
+            onChange={(next) => updateAnswers("priority", next)}
+          />
+        );
+      case 2:
+        return (
+          <HouseholdStep
+            value={state.answers.household}
+            onChange={(next) => updateAnswers("household", next)}
+          />
+        );
+      case 3:
+        return (
+          <DietaryStep
+            value={state.answers.dietary}
+            onChange={(next) => updateAnswers("dietary", next)}
+          />
+        );
+      case 4:
+        return (
+          <BudgetQualityStep
+            value={state.answers.budgetQuality}
+            onChange={(next) => updateAnswers("budgetQuality", next)}
+          />
+        );
+      case 5:
+        return (
+          <BrandsStep
+            value={state.answers.brands}
+            onChange={(next) => updateAnswers("brands", next)}
+          />
+        );
+      default:
+        return (
+          <p className="text-sm" style={{ color: "var(--muted)" }}>
+            Step content will appear here.
+          </p>
+        );
+    }
+  })();
 
   return (
     <div className="mx-auto flex min-h-[70vh] max-w-md flex-col gap-6 py-6">
@@ -126,11 +210,9 @@ export default function OnboardingPage() {
             color: "var(--aubergine)",
           }}
         >
-          Step {state.step}
+          {STEP_TITLES[state.step] ?? `Step ${state.step}`}
         </h2>
-        <p className="text-sm" style={{ color: "var(--muted)" }}>
-          Step content will appear here.
-        </p>
+        {stepContent}
       </section>
 
       <div className="flex items-center gap-3">
