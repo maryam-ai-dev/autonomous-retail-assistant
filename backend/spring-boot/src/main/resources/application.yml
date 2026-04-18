@@ -26,3 +26,9 @@ python-ai-service:
 
 playwright:
   headless: ${PLAYWRIGHT_HEADLESS:true}
+
+springdoc:
+  api-docs:
+    path: /api/openapi.json
+  swagger-ui:
+    path: /api/swagger-ui.html
