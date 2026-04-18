@@ -65,7 +65,8 @@ public class ProductNormalizer {
                 raw.offerFlags(),
                 confidence,
                 raw.sourceFetchedAt(),
-                List.copyOf(warnings));
+                List.copyOf(warnings),
+                List.of());
     }
 
     static String canonicalize(String displayName) {
