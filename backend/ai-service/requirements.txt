@@ -3,3 +3,7 @@ uvicorn
 pydantic
 httpx
 pytest
+pytest-asyncio
+playwright
+anthropic
+
