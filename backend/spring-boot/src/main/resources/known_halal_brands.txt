@@ -1,0 +1,12 @@
+# Known halal brands (editable — classpath resource). One brand per line.
+# Lines beginning with '#' or blank are ignored.
+# Case-insensitive matching.
+Ieat
+Kepak
+Janan
+Halal World Food
+Tahira
+iEat Foods
+Shazans
+Crescent Foods
+Al-Islami

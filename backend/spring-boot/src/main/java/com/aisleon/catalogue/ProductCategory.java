@@ -1,9 +1,11 @@
 package com.aisleon.catalogue;
 
-/**
- * Placeholder — expanded with full enum values in Sprint B0.2.
- */
 public enum ProductCategory {
     GROCERY,
+    HEALTH_BEAUTY,
+    GENERAL_MERCHANDISE,
+    FASHION,
+    ELECTRONICS,
+    PRICE_REFERENCE_ONLY,
     UNKNOWN
 }

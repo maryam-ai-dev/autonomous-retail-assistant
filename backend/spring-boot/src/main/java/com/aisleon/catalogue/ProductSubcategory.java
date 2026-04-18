@@ -1,8 +1,53 @@
 package com.aisleon.catalogue;
 
-/**
- * Placeholder — expanded with full enum values in Sprint B0.2.
- */
 public enum ProductSubcategory {
+    // GROCERY
+    DAIRY,
+    BAKERY,
+    MEAT_POULTRY,
+    FISH_SEAFOOD,
+    FRUIT_VEG,
+    FROZEN,
+    BEVERAGES,
+    CONDIMENTS_SAUCES,
+    PASTA_RICE,
+    CEREALS,
+    SNACKS,
+    CLEANING,
+    BABY,
+    PET,
+    // HEALTH_BEAUTY
+    SKINCARE,
+    HAIRCARE,
+    DENTAL,
+    VITAMINS_SUPPLEMENTS,
+    PHARMACY,
+    FRAGRANCE,
+    MAKEUP,
+    // GENERAL_MERCHANDISE
+    KITCHEN,
+    BEDDING,
+    FURNITURE,
+    TOYS,
+    GARDEN,
+    DIY,
+    ELECTRICAL_APPLIANCES,
+    // FASHION
+    TOPS,
+    BOTTOMS,
+    DRESSES,
+    OUTERWEAR,
+    FOOTWEAR,
+    SPORTSWEAR,
+    UNDERWEAR,
+    ACCESSORIES,
+    // ELECTRONICS
+    LAPTOPS,
+    PHONES,
+    AUDIO,
+    TV,
+    GAMING,
+    CAMERAS,
+    SMART_HOME,
     UNKNOWN
 }
