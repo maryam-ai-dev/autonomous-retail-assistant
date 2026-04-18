@@ -1,9 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
+import { Button } from "@/shared/ui/Button";
 import { RetailerBadge } from "@/shared/ui/RetailerBadge";
+import { useBasketHistory } from "@/lib/api/useBasketHistory";
 import { useBudgetSummary } from "@/lib/api/useBudgetSummary";
 import type { components } from "@/types/api.generated";
+
+type Basket = components["schemas"]["BasketDto"];
 
 type BudgetSummary = components["schemas"]["BudgetSummaryDto"];
 
@@ -14,8 +19,9 @@ function currentMonth(): string {
 }
 
 export default function BudgetPage() {
-  const [month] = useState<string>(currentMonth());
+  const [month, setMonth] = useState<string>(currentMonth());
   const { data, isLoading, error } = useBudgetSummary(month);
+  const history = useBasketHistory(month);
 
   if (isLoading && !data) return <BudgetSkeleton />;
   if (error || !data) return <BudgetError />;
@@ -34,10 +40,10 @@ export default function BudgetPage() {
         >
           Your budget
         </h1>
-        <span className="text-xs" style={{ color: "var(--muted)" }}>
-          {formatMonth(month)}
-        </span>
       </header>
+
+      <MonthSelector month={month} onChange={setMonth} />
+
 
       {hasNoData ? (
         <p
@@ -54,8 +60,151 @@ export default function BudgetPage() {
           <InsightsBox insights={data.insights ?? []} />
         </>
       )}
+
+      <BasketHistory
+        baskets={history.data ?? []}
+        isLoading={history.isLoading}
+      />
     </div>
   );
+}
+
+function MonthSelector({
+  month,
+  onChange,
+}: {
+  month: string;
+  onChange: (next: string) => void;
+}) {
+  function shift(delta: number) {
+    const [year, m] = month.split("-").map(Number);
+    if (!year || !m) return;
+    const d = new Date(year, m - 1 + delta, 1);
+    onChange(
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`,
+    );
+  }
+  return (
+    <div
+      className="flex items-center justify-between rounded-full p-1"
+      style={{ background: "var(--oat)", border: "1px solid var(--border)" }}
+    >
+      <Button variant="ghost" onClick={() => shift(-1)} aria-label="Previous month">
+        ←
+      </Button>
+      <span
+        className="text-sm font-semibold"
+        style={{ color: "var(--aubergine)" }}
+      >
+        {formatMonth(month)}
+      </span>
+      <Button variant="ghost" onClick={() => shift(1)} aria-label="Next month">
+        →
+      </Button>
+    </div>
+  );
+}
+
+function BasketHistory({
+  baskets,
+  isLoading,
+}: {
+  baskets: Basket[];
+  isLoading: boolean;
+}) {
+  if (isLoading && baskets.length === 0) {
+    return (
+      <div
+        className="h-24 rounded-2xl"
+        style={{ background: "var(--oat)" }}
+      />
+    );
+  }
+  if (baskets.length === 0) {
+    return (
+      <section aria-label="Basket history" className="flex flex-col gap-2">
+        <h2
+          className="text-sm font-semibold"
+          style={{ color: "var(--aubergine)" }}
+        >
+          Baskets this month
+        </h2>
+        <p className="text-sm italic" style={{ color: "var(--muted)" }}>
+          No baskets for this month.
+        </p>
+      </section>
+    );
+  }
+  return (
+    <section aria-label="Basket history" className="flex flex-col gap-2">
+      <h2
+        className="text-sm font-semibold"
+        style={{ color: "var(--aubergine)" }}
+      >
+        Baskets this month
+      </h2>
+      <ul className="flex flex-col gap-2">
+        {baskets.map((b) => (
+          <li key={b.id}>
+            <Link
+              href={`/basket/${encodeURIComponent(b.id)}`}
+              className="flex items-center justify-between rounded-xl p-3"
+              style={{
+                background: "var(--oat)",
+                border: "1px solid var(--border)",
+              }}
+            >
+              <div className="flex flex-col gap-0.5">
+                <span
+                  className="text-sm font-medium"
+                  style={{ color: "var(--aubergine)" }}
+                >
+                  {b.intentText}
+                </span>
+                <span className="text-xs" style={{ color: "var(--muted)" }}>
+                  {new Date(b.createdAt).toLocaleDateString("en-GB", {
+                    day: "numeric",
+                    month: "short",
+                  })}
+                </span>
+              </div>
+              <div className="flex flex-col items-end gap-1">
+                <span
+                  className="text-sm font-semibold"
+                  style={{
+                    color: "var(--aubergine)",
+                    fontVariantNumeric: "tabular-nums",
+                  }}
+                >
+                  £{b.totalCost.toFixed(2)}
+                </span>
+                <span
+                  className="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
+                  style={statusStyle(b.status)}
+                >
+                  {b.status}
+                </span>
+              </div>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function statusStyle(status: Basket["status"]): {
+  background: string;
+  color: string;
+} {
+  switch (status) {
+    case "APPROVED":
+      return { background: "var(--sage-light)", color: "#35502B" };
+    case "CHECKED_OUT":
+      return { background: "var(--ink-light)", color: "#1A2E47" };
+    default:
+      return { background: "var(--clay-light)", color: "var(--clay)" };
+  }
 }
 
 function StatGrid({ summary }: { summary: BudgetSummary }) {
