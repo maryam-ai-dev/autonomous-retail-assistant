@@ -1,114 +1,154 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { register } from "@/features/auth/services/auth-service";
+import { Button } from "@/shared/ui/Button";
+import { Input } from "@/shared/ui/Input";
+
+function slugify(input: string): string {
+  return input
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function deriveUsername(displayName: string, email: string): string {
+  const fromName = slugify(displayName);
+  if (fromName) return fromName;
+  const localPart = email.split("@")[0] ?? "";
+  return slugify(localPart) || "user";
+}
+
+function classifyError(message: string): {
+  emailError: string | null;
+  passwordError: string | null;
+  formError: string | null;
+} {
+  const lower = message.toLowerCase();
+  if (lower.includes("email") && (lower.includes("exists") || lower.includes("duplicate") || lower.includes("taken"))) {
+    return {
+      emailError: "This email is already in use.",
+      passwordError: null,
+      formError: null,
+    };
+  }
+  if (lower.includes("password") && (lower.includes("weak") || lower.includes("short") || lower.includes("invalid"))) {
+    return {
+      emailError: null,
+      passwordError: message,
+      formError: null,
+    };
+  }
+  return { emailError: null, passwordError: null, formError: message };
+}
 
 export default function SignupForm() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [username, setUsername] = useState("");
   const [displayName, setDisplayName] = useState("");
-  const [error, setError] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    setError("");
+    setError(null);
     setLoading(true);
-
     try {
-      await register(email, password, username, displayName);
-      router.push("/search");
+      const username = deriveUsername(displayName, email);
+      await register(email, password, username, displayName || username);
+      router.push("/onboarding");
     } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("Registration failed. Please try again.");
-      }
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Registration failed. Please try again.";
+      setError(message);
     } finally {
       setLoading(false);
     }
   }
 
+  const { emailError, passwordError, formError } = error
+    ? classifyError(error)
+    : { emailError: null, passwordError: null, formError: null };
+
   return (
-    <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-4">
-      <h1 className="text-2xl font-bold text-center">Create Account</h1>
-
-      {error && (
-        <div className="rounded bg-red-50 p-3 text-sm text-red-600">
-          {error}
-        </div>
-      )}
-
-      <div>
-        <label htmlFor="email" className="block text-sm font-medium mb-1">
-          Email
-        </label>
-        <input
-          id="email"
-          type="email"
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-      </div>
-
-      <div>
-        <label htmlFor="username" className="block text-sm font-medium mb-1">
-          Username
-        </label>
-        <input
-          id="username"
-          type="text"
-          required
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-      </div>
-
-      <div>
-        <label htmlFor="displayName" className="block text-sm font-medium mb-1">
-          Display Name
-        </label>
-        <input
-          id="displayName"
-          type="text"
-          value={displayName}
-          onChange={(e) => setDisplayName(e.target.value)}
-          className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-      </div>
-
-      <div>
-        <label htmlFor="password" className="block text-sm font-medium mb-1">
-          Password
-        </label>
-        <input
-          id="password"
-          type="password"
-          required
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-      </div>
-
-      <button
-        type="submit"
-        disabled={loading}
-        className="w-full rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+    <form
+      onSubmit={handleSubmit}
+      noValidate
+      className="w-full max-w-sm space-y-5 rounded-2xl p-6"
+      style={{
+        background: "var(--oat)",
+        border: "1px solid var(--border)",
+      }}
+    >
+      <h1
+        className="text-center text-3xl font-semibold italic"
+        style={{
+          fontFamily: "var(--font-fraunces)",
+          color: "var(--aubergine)",
+        }}
       >
-        {loading ? "Creating account..." : "Sign Up"}
-      </button>
+        Join Aisleon
+      </h1>
 
-      <p className="text-center text-sm text-gray-600">
+      <Input
+        label="Email"
+        id="signup-email"
+        type="email"
+        autoComplete="email"
+        required
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        error={emailError ?? undefined}
+      />
+
+      <Input
+        label="Display name"
+        id="signup-display-name"
+        type="text"
+        autoComplete="name"
+        required
+        value={displayName}
+        onChange={(e) => setDisplayName(e.target.value)}
+      />
+
+      <Input
+        label="Password"
+        id="signup-password"
+        type="password"
+        autoComplete="new-password"
+        required
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        error={passwordError ?? undefined}
+      />
+
+      {formError ? (
+        <p
+          role="alert"
+          className="text-xs"
+          style={{ color: "var(--amber)" }}
+        >
+          {formError}
+        </p>
+      ) : null}
+
+      <Button type="submit" variant="primary" fullWidth disabled={loading}>
+        {loading ? "Creating account…" : "Create account"}
+      </Button>
+
+      <p className="text-center text-sm" style={{ color: "var(--muted)" }}>
         Already have an account?{" "}
-        <Link href="/login" className="text-blue-600 hover:underline">
+        <Link
+          href="/login"
+          className="font-semibold underline"
+          style={{ color: "var(--clay)" }}
+        >
           Sign in
         </Link>
       </p>
