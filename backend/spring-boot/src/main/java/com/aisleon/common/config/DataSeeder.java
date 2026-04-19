@@ -24,13 +24,6 @@ public class DataSeeder implements ApplicationRunner {
         }
 
         merchantRepository.save(MerchantJpaEntity.builder()
-                .name("eBay")
-                .sourceType("API")
-                .isApproved(true)
-                .trustScore(new BigDecimal("0.90"))
-                .build());
-
-        merchantRepository.save(MerchantJpaEntity.builder()
                 .name("GenericBrowser")
                 .sourceType("BROWSER")
                 .isApproved(false)

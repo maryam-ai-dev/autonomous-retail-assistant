@@ -10,8 +10,10 @@ import org.springframework.stereotype.Component;
 import java.util.UUID;
 
 /**
- * Mock implementation. Real eBay purchase API requires approved seller account.
- * Replace with real implementation when available.
+ * Mock checkout executor. The current Aisleon flow hands off to retailer
+ * checkout pages via {@code GET /api/baskets/{id}/checkout-links} (sprint
+ * B7.3); this executor remains as a placeholder for any in-process checkout
+ * flow we may add later.
  */
 @Component
 public class MockMarketplaceCheckoutExecutor implements CheckoutExecutor {

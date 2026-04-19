@@ -1,50 +1,59 @@
 package com.aisleon.approval.interfaces;
 
-import com.aisleon.approval.application.ApprovalService;
-import com.aisleon.approval.domain.ApprovalRequest;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.Map;
+import java.util.UUID;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-import java.util.UUID;
-
+/**
+ * Deprecated approval-queue endpoints from the trust-aware retail prototype.
+ * Basket approval now happens inline via {@code POST /api/baskets/{id}/approve}
+ * (sprint B7.1).
+ *
+ * <p>All routes here return 410 Gone per sprint B11.2. Internal approval events
+ * are still emitted by upstream cart/checkout flows and consumed by the audit
+ * log — only the user-facing queue API is gone.
+ */
 @RestController
 @RequestMapping("/api/approvals")
+@Tag(name = "Deprecated — approvals queue (use /api/baskets/{id}/approve)")
 public class ApprovalController {
 
-    private final ApprovalService approvalService;
+    private static final String REPLACEMENT = "POST /api/baskets/{id}/approve";
 
-    public ApprovalController(ApprovalService approvalService) {
-        this.approvalService = approvalService;
-    }
-
+    @Operation(summary = "GONE — basket approval is now inline.")
     @GetMapping
-    public ResponseEntity<List<ApprovalRequest>> getPendingApprovals(Authentication authentication) {
-        UUID userId = UUID.fromString(authentication.getPrincipal().toString());
-        return ResponseEntity.ok(approvalService.getPendingApprovals(userId));
+    public ResponseEntity<Map<String, String>> listGone() {
+        return gone();
     }
 
+    @Operation(summary = "GONE — basket approval is now inline.")
     @GetMapping("/{id}")
-    public ResponseEntity<ApprovalRequest> getApproval(@PathVariable UUID id) {
-        return ResponseEntity.ok(approvalService.getApprovalById(id));
+    public ResponseEntity<Map<String, String>> getGone(@PathVariable("id") UUID id) {
+        return gone();
     }
 
+    @Operation(summary = "GONE — basket approval is now inline.")
     @PostMapping("/{id}/approve")
-    public ResponseEntity<ApprovalRequest> approve(
-            @PathVariable UUID id, Authentication authentication) {
-        UUID userId = UUID.fromString(authentication.getPrincipal().toString());
-        return ResponseEntity.ok(approvalService.approve(id, userId));
+    public ResponseEntity<Map<String, String>> approveGone(@PathVariable("id") UUID id) {
+        return gone();
     }
 
+    @Operation(summary = "GONE — basket approval is now inline.")
     @PostMapping("/{id}/reject")
-    public ResponseEntity<ApprovalRequest> reject(
-            @PathVariable UUID id, Authentication authentication) {
-        UUID userId = UUID.fromString(authentication.getPrincipal().toString());
-        return ResponseEntity.ok(approvalService.reject(id, userId));
+    public ResponseEntity<Map<String, String>> rejectGone(@PathVariable("id") UUID id) {
+        return gone();
+    }
+
+    private static ResponseEntity<Map<String, String>> gone() {
+        return ResponseEntity.status(HttpStatus.GONE)
+                .body(Map.of("reason", "ENDPOINT_GONE", "replacement", REPLACEMENT));
     }
 }
