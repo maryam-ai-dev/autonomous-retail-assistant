@@ -36,7 +36,7 @@ class TescoApifyConnectorTest {
     }
 
     @Test
-    void timeoutTriggersSingleRetryThenCircuitOpens() {
+    void timeoutTriggersSingleRetryAndRecordsFailure() {
         StubClient client = StubClient.alwaysTimeout();
         TescoApifyConnector connector = new TescoApifyConnector(client);
 
@@ -44,9 +44,25 @@ class TescoApifyConnectorTest {
 
         assertThat(products).isEmpty();
         assertThat(client.callCount).isEqualTo(2);
+        // single failure — circuit still CLOSED (threshold is 3)
+        assertThat(connector.getStatus().circuitState())
+                .isEqualTo(CircuitState.CLOSED);
+        assertThat(connector.getStatus().lastFailureReason()).contains("timed out");
+    }
+
+    @Test
+    void threeConsecutiveFailuresOpenCircuit() {
+        StubClient client = StubClient.alwaysHttpError(500);
+        TescoApifyConnector connector = new TescoApifyConnector(client);
+
+        connector.search("milk", 10);
+        connector.search("milk", 10);
+        connector.search("milk", 10);
+
         assertThat(connector.getStatus().circuitState())
                 .isEqualTo(CircuitState.OPEN);
-        assertThat(connector.getStatus().lastFailureReason()).contains("timed out");
+        // Each 500 does not retry
+        assertThat(client.callCount).isEqualTo(3);
     }
 
     @Test
@@ -58,8 +74,9 @@ class TescoApifyConnectorTest {
 
         assertThat(products).isEmpty();
         assertThat(client.callCount).isEqualTo(1);
+        // One failure under the threshold — circuit stays closed
         assertThat(connector.getStatus().circuitState())
-                .isEqualTo(CircuitState.OPEN);
+                .isEqualTo(CircuitState.CLOSED);
     }
 
     private static class StubClient implements ApifyClient {

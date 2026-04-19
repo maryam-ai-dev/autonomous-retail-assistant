@@ -3,6 +3,7 @@ package com.aisleon.scraping.apify;
 import com.aisleon.catalogue.RawScraperProduct;
 import com.aisleon.catalogue.Retailer;
 import com.aisleon.scraping.CircuitState;
+import com.aisleon.scraping.ConnectorCircuitBreaker;
 import com.aisleon.scraping.ConnectorStatus;
 import com.aisleon.scraping.RetailerConnector;
 import java.time.Instant;
@@ -19,21 +20,29 @@ public abstract class ApifyConnector implements RetailerConnector {
 
     protected final ApifyClient apify;
     protected final String actorId;
+    private final ConnectorCircuitBreaker breaker;
 
     private final AtomicReference<Instant> lastSuccessAt = new AtomicReference<>();
     private final AtomicReference<Instant> lastFailureAt = new AtomicReference<>();
     private final AtomicReference<String> lastFailureReason = new AtomicReference<>();
-    private final AtomicReference<CircuitState> circuitState =
-            new AtomicReference<>(CircuitState.CLOSED);
     private final AtomicInteger recentResultCount = new AtomicInteger(0);
 
     protected ApifyConnector(ApifyClient apify, String actorId) {
+        this(apify, actorId, new ConnectorCircuitBreaker());
+    }
+
+    protected ApifyConnector(
+            ApifyClient apify, String actorId, ConnectorCircuitBreaker breaker) {
         this.apify = apify;
         this.actorId = actorId;
+        this.breaker = breaker;
     }
 
     @Override
     public List<RawScraperProduct> search(String query, int maxResults) {
+        if (!breaker.allowRequest()) {
+            return List.of();
+        }
         Map<String, Object> input = buildInput(query, maxResults);
         ApifyException lastError = null;
         for (int attempt = 0; attempt < 2; attempt++) {
@@ -42,7 +51,7 @@ public abstract class ApifyConnector implements RetailerConnector {
                 List<RawScraperProduct> products = parse(rawItems);
                 lastSuccessAt.set(Instant.now());
                 recentResultCount.set(products.size());
-                circuitState.set(CircuitState.CLOSED);
+                breaker.recordSuccess();
                 return products;
             } catch (ApifyException e) {
                 lastError = e;
@@ -52,13 +61,13 @@ public abstract class ApifyConnector implements RetailerConnector {
         }
         lastFailureAt.set(Instant.now());
         lastFailureReason.set(lastError != null ? lastError.getMessage() : "unknown");
-        circuitState.set(CircuitState.OPEN);
+        breaker.recordFailure();
         return List.of();
     }
 
     @Override
     public boolean isHealthy() {
-        return circuitState.get() != CircuitState.OPEN;
+        return breaker.currentState() != CircuitState.OPEN;
     }
 
     @Override
@@ -67,7 +76,7 @@ public abstract class ApifyConnector implements RetailerConnector {
                 getRetailer(),
                 isHealthy(),
                 false,
-                circuitState.get(),
+                breaker.currentState(),
                 lastSuccessAt.get(),
                 lastFailureAt.get(),
                 lastFailureReason.get(),
