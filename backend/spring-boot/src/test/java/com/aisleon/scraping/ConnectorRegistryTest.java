@@ -16,7 +16,7 @@ class ConnectorRegistryTest {
         StubConnector tesco = new StubConnector(Retailer.TESCO, true);
         StubConnector boots = new StubConnector(Retailer.BOOTS, true);
         ConnectorRegistry registry = new ConnectorRegistry(
-                List.of(tesco, boots), "TESCO", new StaleCacheCounter());
+                List.of(tesco, boots), "TESCO", new StaleCacheCounter(), new ValidationFailureRecorder());
 
         assertThatThrownBy(() -> registry.getConnector(Retailer.TESCO))
                 .isInstanceOf(ConnectorUnavailableException.class);
@@ -29,7 +29,7 @@ class ConnectorRegistryTest {
         StubConnector tesco = new StubConnector(Retailer.TESCO, true);
         StubConnector boots = new StubConnector(Retailer.BOOTS, false);
         ConnectorRegistry registry = new ConnectorRegistry(
-                List.of(tesco, boots), "", new StaleCacheCounter());
+                List.of(tesco, boots), "", new StaleCacheCounter(), new ValidationFailureRecorder());
 
         assertThat(registry.availableRetailers()).containsExactly(Retailer.TESCO);
     }
@@ -39,7 +39,8 @@ class ConnectorRegistryTest {
         StubConnector tesco = new StubConnector(Retailer.TESCO, true);
         StaleCacheCounter counter = new StaleCacheCounter();
         ConnectorRegistry registry =
-                new ConnectorRegistry(List.of(tesco), "", counter);
+                new ConnectorRegistry(
+                        List.of(tesco), "", counter, new ValidationFailureRecorder());
 
         counter.record(Retailer.TESCO);
         counter.record(Retailer.TESCO);
@@ -53,6 +54,25 @@ class ConnectorRegistryTest {
     }
 
     @Test
+    void validationFailureOverlaysLastFailureReason() {
+        StubConnector tesco = new StubConnector(Retailer.TESCO, true);
+        ValidationFailureRecorder recorder = new ValidationFailureRecorder();
+        ConnectorRegistry registry =
+                new ConnectorRegistry(
+                        List.of(tesco), "", new StaleCacheCounter(), recorder);
+
+        recorder.record(Retailer.TESCO, "REJECT_LOW_CONFIDENCE");
+
+        ConnectorStatus status =
+                registry.allStatuses().stream()
+                        .filter(s -> s.retailer() == Retailer.TESCO)
+                        .findFirst()
+                        .orElseThrow();
+        assertThat(status.lastFailureReason()).isEqualTo("REJECT_LOW_CONFIDENCE");
+        assertThat(status.lastFailureAt()).isNotNull();
+    }
+
+    @Test
     void statusListContainsEveryRegisteredConnector() {
         StubConnector tesco = new StubConnector(Retailer.TESCO, true);
         StubConnector sainsburys = new StubConnector(Retailer.SAINSBURYS, true);
@@ -60,7 +80,7 @@ class ConnectorRegistryTest {
         StubConnector argos = new StubConnector(Retailer.ARGOS, false);
         ConnectorRegistry registry =
                 new ConnectorRegistry(
-                        List.of(tesco, sainsburys, boots, argos), "", new StaleCacheCounter());
+                        List.of(tesco, sainsburys, boots, argos), "", new StaleCacheCounter(), new ValidationFailureRecorder());
 
         List<ConnectorStatus> statuses = registry.allStatuses();
 

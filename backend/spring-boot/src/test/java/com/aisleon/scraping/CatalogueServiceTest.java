@@ -21,15 +21,18 @@ class CatalogueServiceTest {
     private final ScraperResultValidator validator = new ScraperResultValidator();
     private final InMemoryCatalogueCache cache = new InMemoryCatalogueCache();
     private final StaleCacheCounter staleCounter = new StaleCacheCounter();
+    private final ValidationFailureRecorder validationRecorder = new ValidationFailureRecorder();
 
     @Test
     void cacheMissCallsScraperThenCaches() {
         StubConnector connector = new StubConnector(Retailer.TESCO,
                 List.of(raw("p1"), raw("p2"), raw("p3")));
         ConnectorRegistry registry =
-                new ConnectorRegistry(List.of(connector), "", staleCounter);
+                new ConnectorRegistry(
+                        List.of(connector), "", staleCounter, validationRecorder);
         CatalogueService service =
-                new CatalogueService(registry, normalizer, validator, cache, staleCounter);
+                new CatalogueService(
+                        registry, normalizer, validator, cache, staleCounter, validationRecorder);
 
         List<NormalizedProduct> first = service.search("milk", Retailer.TESCO, 10);
         assertThat(first).hasSize(3);
@@ -44,9 +47,11 @@ class CatalogueServiceTest {
     void scraperReturningEmptyServesEmptyWhenNoCache() {
         StubConnector connector = new StubConnector(Retailer.TESCO, List.of());
         ConnectorRegistry registry =
-                new ConnectorRegistry(List.of(connector), "", staleCounter);
+                new ConnectorRegistry(
+                        List.of(connector), "", staleCounter, validationRecorder);
         CatalogueService service =
-                new CatalogueService(registry, normalizer, validator, cache, staleCounter);
+                new CatalogueService(
+                        registry, normalizer, validator, cache, staleCounter, validationRecorder);
 
         List<NormalizedProduct> result = service.search("xyz", Retailer.TESCO, 10);
         assertThat(result).isEmpty();
@@ -56,13 +61,35 @@ class CatalogueServiceTest {
     void scrapeRejectedByValidatorDoesNotPoisonCache() {
         StubConnector connector = new StubConnector(Retailer.TESCO, List.of(raw("only-one")));
         ConnectorRegistry registry =
-                new ConnectorRegistry(List.of(connector), "", staleCounter);
+                new ConnectorRegistry(
+                        List.of(connector), "", staleCounter, validationRecorder);
         CatalogueService service =
-                new CatalogueService(registry, normalizer, validator, cache, staleCounter);
+                new CatalogueService(
+                        registry, normalizer, validator, cache, staleCounter, validationRecorder);
 
         List<NormalizedProduct> result = service.search("bread", Retailer.TESCO, 10);
         assertThat(result).isEmpty();
         assertThat(cache.get(Retailer.TESCO, "bread")).isEmpty();
+    }
+
+    @Test
+    void scrapeRejectionUpdatesConnectorStatusLastFailureReason() {
+        StubConnector connector = new StubConnector(Retailer.TESCO, List.of(raw("only-one")));
+        ConnectorRegistry registry =
+                new ConnectorRegistry(
+                        List.of(connector), "", staleCounter, validationRecorder);
+        CatalogueService service =
+                new CatalogueService(
+                        registry, normalizer, validator, cache, staleCounter, validationRecorder);
+
+        service.search("bread", Retailer.TESCO, 10);
+
+        ConnectorStatus status =
+                registry.allStatuses().stream()
+                        .filter(s -> s.retailer() == Retailer.TESCO)
+                        .findFirst()
+                        .orElseThrow();
+        assertThat(status.lastFailureReason()).isEqualTo("REJECT_TOO_FEW");
     }
 
     private static RawScraperProduct raw(String id) {

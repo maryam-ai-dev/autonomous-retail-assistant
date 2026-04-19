@@ -29,18 +29,21 @@ public class CatalogueService {
     private final ScraperResultValidator validator;
     private final CatalogueCache cache;
     private final StaleCacheCounter staleCounter;
+    private final ValidationFailureRecorder validationFailureRecorder;
 
     public CatalogueService(
             ConnectorRegistry registry,
             ProductNormalizer normalizer,
             ScraperResultValidator validator,
             CatalogueCache cache,
-            StaleCacheCounter staleCounter) {
+            StaleCacheCounter staleCounter,
+            ValidationFailureRecorder validationFailureRecorder) {
         this.registry = registry;
         this.normalizer = normalizer;
         this.validator = validator;
         this.cache = cache;
         this.staleCounter = staleCounter;
+        this.validationFailureRecorder = validationFailureRecorder;
     }
 
     public List<NormalizedProduct> search(String query, Retailer retailer, int maxResults) {
@@ -76,6 +79,7 @@ public class CatalogueService {
         if (outcome != ScraperResultValidator.Outcome.ACCEPT) {
             log.warn("Scrape rejected ({} for {}): {}", outcome, retailer,
                     normalized.size());
+            validationFailureRecorder.record(retailer, outcome.name());
             return serveStaleOrEmpty(cached, retailer, outcome.name());
         }
 

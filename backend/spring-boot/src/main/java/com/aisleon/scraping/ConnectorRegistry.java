@@ -1,6 +1,7 @@
 package com.aisleon.scraping;
 
 import com.aisleon.catalogue.Retailer;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -27,11 +28,13 @@ public class ConnectorRegistry {
     private final Set<Retailer> disabled;
     private final ConcurrentMap<Retailer, ConnectorStatus> latestStatus = new ConcurrentHashMap<>();
     private final StaleCacheCounter staleCounter;
+    private final ValidationFailureRecorder validationFailureRecorder;
 
     public ConnectorRegistry(
             List<RetailerConnector> registeredConnectors,
             @Value("${connector.disabled:${CONNECTOR_DISABLED:}}") String disabledCsv,
-            StaleCacheCounter staleCounter) {
+            StaleCacheCounter staleCounter,
+            ValidationFailureRecorder validationFailureRecorder) {
         Map<Retailer, RetailerConnector> map = new HashMap<>();
         for (RetailerConnector c : registeredConnectors) {
             map.put(c.getRetailer(), c);
@@ -39,6 +42,7 @@ public class ConnectorRegistry {
         this.connectors = Collections.unmodifiableMap(map);
         this.disabled = parseDisabled(disabledCsv);
         this.staleCounter = staleCounter;
+        this.validationFailureRecorder = validationFailureRecorder;
         refreshStatuses();
     }
 
@@ -92,14 +96,25 @@ public class ConnectorRegistry {
     private ConnectorStatus buildStatus(Retailer retailer, RetailerConnector connector) {
         ConnectorStatus raw = connector.getStatus();
         boolean disabledForRetailer = disabled.contains(retailer);
+        Instant failureAt = raw.lastFailureAt();
+        String failureReason = raw.lastFailureReason();
+        Optional<ValidationFailureRecorder.Entry> validation =
+                validationFailureRecorder.latestFor(retailer);
+        if (validation.isPresent()) {
+            Instant validationAt = validation.get().at();
+            if (failureAt == null || validationAt.isAfter(failureAt)) {
+                failureAt = validationAt;
+                failureReason = validation.get().reason();
+            }
+        }
         return new ConnectorStatus(
                 retailer,
                 raw.healthy() && !disabledForRetailer,
                 disabledForRetailer,
                 raw.circuitState(),
                 raw.lastSuccessAt(),
-                raw.lastFailureAt(),
-                raw.lastFailureReason(),
+                failureAt,
+                failureReason,
                 raw.recentResultCount(),
                 staleCounter.countLastHour(retailer),
                 raw.apifyConnector());
