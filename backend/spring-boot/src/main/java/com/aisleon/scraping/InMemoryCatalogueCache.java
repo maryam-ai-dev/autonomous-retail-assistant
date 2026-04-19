@@ -7,11 +7,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.stereotype.Component;
 
 @Component
-@ConditionalOnMissingBean(CatalogueCache.class)
 public class InMemoryCatalogueCache implements CatalogueCache {
 
     private final ConcurrentMap<String, Entry> store = new ConcurrentHashMap<>();

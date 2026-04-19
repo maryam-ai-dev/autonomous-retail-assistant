@@ -28,16 +28,19 @@ public class CatalogueService {
     private final ProductNormalizer normalizer;
     private final ScraperResultValidator validator;
     private final CatalogueCache cache;
+    private final StaleCacheCounter staleCounter;
 
     public CatalogueService(
             ConnectorRegistry registry,
             ProductNormalizer normalizer,
             ScraperResultValidator validator,
-            CatalogueCache cache) {
+            CatalogueCache cache,
+            StaleCacheCounter staleCounter) {
         this.registry = registry;
         this.normalizer = normalizer;
         this.validator = validator;
         this.cache = cache;
+        this.staleCounter = staleCounter;
     }
 
     public List<NormalizedProduct> search(String query, Retailer retailer, int maxResults) {
@@ -101,6 +104,7 @@ public class CatalogueService {
             Optional<CatalogueCache.Entry> cached, Retailer retailer, String reason) {
         if (cached.isPresent() && withinStaleWindow(cached.get())) {
             log.info("Serving stale cache for {} (reason={})", retailer, reason);
+            staleCounter.record(retailer);
             return appendStaleWarning(cached.get().products());
         }
         return List.of();

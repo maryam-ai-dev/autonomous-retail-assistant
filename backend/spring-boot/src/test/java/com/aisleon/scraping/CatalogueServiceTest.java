@@ -20,15 +20,16 @@ class CatalogueServiceTest {
             new ProductNormalizer(new DietaryTaggingService());
     private final ScraperResultValidator validator = new ScraperResultValidator();
     private final InMemoryCatalogueCache cache = new InMemoryCatalogueCache();
+    private final StaleCacheCounter staleCounter = new StaleCacheCounter();
 
     @Test
     void cacheMissCallsScraperThenCaches() {
         StubConnector connector = new StubConnector(Retailer.TESCO,
                 List.of(raw("p1"), raw("p2"), raw("p3")));
         ConnectorRegistry registry =
-                new ConnectorRegistry(List.of(connector), "");
+                new ConnectorRegistry(List.of(connector), "", staleCounter);
         CatalogueService service =
-                new CatalogueService(registry, normalizer, validator, cache);
+                new CatalogueService(registry, normalizer, validator, cache, staleCounter);
 
         List<NormalizedProduct> first = service.search("milk", Retailer.TESCO, 10);
         assertThat(first).hasSize(3);
@@ -43,9 +44,9 @@ class CatalogueServiceTest {
     void scraperReturningEmptyServesEmptyWhenNoCache() {
         StubConnector connector = new StubConnector(Retailer.TESCO, List.of());
         ConnectorRegistry registry =
-                new ConnectorRegistry(List.of(connector), "");
+                new ConnectorRegistry(List.of(connector), "", staleCounter);
         CatalogueService service =
-                new CatalogueService(registry, normalizer, validator, cache);
+                new CatalogueService(registry, normalizer, validator, cache, staleCounter);
 
         List<NormalizedProduct> result = service.search("xyz", Retailer.TESCO, 10);
         assertThat(result).isEmpty();
@@ -55,9 +56,9 @@ class CatalogueServiceTest {
     void scrapeRejectedByValidatorDoesNotPoisonCache() {
         StubConnector connector = new StubConnector(Retailer.TESCO, List.of(raw("only-one")));
         ConnectorRegistry registry =
-                new ConnectorRegistry(List.of(connector), "");
+                new ConnectorRegistry(List.of(connector), "", staleCounter);
         CatalogueService service =
-                new CatalogueService(registry, normalizer, validator, cache);
+                new CatalogueService(registry, normalizer, validator, cache, staleCounter);
 
         List<NormalizedProduct> result = service.search("bread", Retailer.TESCO, 10);
         assertThat(result).isEmpty();

@@ -15,7 +15,8 @@ class ConnectorRegistryTest {
     void getConnectorThrowsWhenRetailerDisabled() {
         StubConnector tesco = new StubConnector(Retailer.TESCO, true);
         StubConnector boots = new StubConnector(Retailer.BOOTS, true);
-        ConnectorRegistry registry = new ConnectorRegistry(List.of(tesco, boots), "TESCO");
+        ConnectorRegistry registry = new ConnectorRegistry(
+                List.of(tesco, boots), "TESCO", new StaleCacheCounter());
 
         assertThatThrownBy(() -> registry.getConnector(Retailer.TESCO))
                 .isInstanceOf(ConnectorUnavailableException.class);
@@ -27,9 +28,28 @@ class ConnectorRegistryTest {
     void availableRetailersExcludesUnhealthyConnectors() {
         StubConnector tesco = new StubConnector(Retailer.TESCO, true);
         StubConnector boots = new StubConnector(Retailer.BOOTS, false);
-        ConnectorRegistry registry = new ConnectorRegistry(List.of(tesco, boots), "");
+        ConnectorRegistry registry = new ConnectorRegistry(
+                List.of(tesco, boots), "", new StaleCacheCounter());
 
         assertThat(registry.availableRetailers()).containsExactly(Retailer.TESCO);
+    }
+
+    @Test
+    void staleCacheUsageOverlaidOntoConnectorStatus() {
+        StubConnector tesco = new StubConnector(Retailer.TESCO, true);
+        StaleCacheCounter counter = new StaleCacheCounter();
+        ConnectorRegistry registry =
+                new ConnectorRegistry(List.of(tesco), "", counter);
+
+        counter.record(Retailer.TESCO);
+        counter.record(Retailer.TESCO);
+
+        ConnectorStatus status =
+                registry.allStatuses().stream()
+                        .filter(s -> s.retailer() == Retailer.TESCO)
+                        .findFirst()
+                        .orElseThrow();
+        assertThat(status.staleCacheUsageCount()).isEqualTo(2);
     }
 
     @Test
@@ -39,7 +59,8 @@ class ConnectorRegistryTest {
         StubConnector boots = new StubConnector(Retailer.BOOTS, true);
         StubConnector argos = new StubConnector(Retailer.ARGOS, false);
         ConnectorRegistry registry =
-                new ConnectorRegistry(List.of(tesco, sainsburys, boots, argos), "");
+                new ConnectorRegistry(
+                        List.of(tesco, sainsburys, boots, argos), "", new StaleCacheCounter());
 
         List<ConnectorStatus> statuses = registry.allStatuses();
 

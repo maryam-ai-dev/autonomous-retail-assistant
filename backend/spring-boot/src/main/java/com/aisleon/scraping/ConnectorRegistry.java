@@ -26,16 +26,19 @@ public class ConnectorRegistry {
     private final Map<Retailer, RetailerConnector> connectors;
     private final Set<Retailer> disabled;
     private final ConcurrentMap<Retailer, ConnectorStatus> latestStatus = new ConcurrentHashMap<>();
+    private final StaleCacheCounter staleCounter;
 
     public ConnectorRegistry(
             List<RetailerConnector> registeredConnectors,
-            @Value("${connector.disabled:${CONNECTOR_DISABLED:}}") String disabledCsv) {
+            @Value("${connector.disabled:${CONNECTOR_DISABLED:}}") String disabledCsv,
+            StaleCacheCounter staleCounter) {
         Map<Retailer, RetailerConnector> map = new HashMap<>();
         for (RetailerConnector c : registeredConnectors) {
             map.put(c.getRetailer(), c);
         }
         this.connectors = Collections.unmodifiableMap(map);
         this.disabled = parseDisabled(disabledCsv);
+        this.staleCounter = staleCounter;
         refreshStatuses();
     }
 
@@ -98,7 +101,7 @@ public class ConnectorRegistry {
                 raw.lastFailureAt(),
                 raw.lastFailureReason(),
                 raw.recentResultCount(),
-                raw.staleCacheUsageCount(),
+                staleCounter.countLastHour(retailer),
                 raw.apifyConnector());
     }
 
