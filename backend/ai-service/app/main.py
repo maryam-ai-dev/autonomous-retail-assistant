@@ -3,6 +3,7 @@
 from fastapi import FastAPI
 
 from app.api.basket_router import router as basket_router
+from app.api.budget_router import router as budget_router
 from app.api.intent_router import router as intent_router
 from app.api.ranking_router import router as ranking_router
 from app.api.scrapers_router import router as scrapers_router
@@ -19,6 +20,7 @@ app.include_router(scrapers_router)
 app.include_router(substitution_router)
 app.include_router(intent_router)
 app.include_router(basket_router)
+app.include_router(budget_router)
 
 
 @app.get("/health")
