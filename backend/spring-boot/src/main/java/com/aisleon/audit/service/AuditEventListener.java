@@ -5,6 +5,7 @@ import com.aisleon.approval.events.PurchaseAuthorizedEvent;
 import com.aisleon.approval.events.PurchaseRejectedEvent;
 import com.aisleon.audit.repository.AuditEventJpaEntity;
 import com.aisleon.audit.repository.AuditRepository;
+import com.aisleon.basket.BasketApprovedEvent;
 import com.aisleon.cart.events.ApprovalRequiredEvent;
 import com.aisleon.cart.events.CartCheckedOutEvent;
 import com.aisleon.checkout.events.CheckoutCompletedEvent;
@@ -78,6 +79,12 @@ public class AuditEventListener {
     @Async("auditExecutor")
     public void onProductCandidatesRanked(ProductCandidatesRankedEvent event) {
         saveEvent(event.userId(), "PRODUCTS_RANKED", "discovery", null, event);
+    }
+
+    @EventListener
+    @Async("auditExecutor")
+    public void onBasketApproved(BasketApprovedEvent event) {
+        saveEvent(event.userId(), "BASKET_APPROVED", "basket", event.basketId().toString(), event);
     }
 
     @SuppressWarnings("unchecked")
