@@ -2,11 +2,14 @@ package com.aisleon.basket.api;
 
 import com.aisleon.basket.application.BasketApprovalService;
 import com.aisleon.basket.application.BasketFlagService;
+import com.aisleon.basket.application.CheckoutLinksService;
 import com.aisleon.basket.infrastructure.BasketJpaEntity;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.Map;
 import java.util.UUID;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -19,10 +22,15 @@ public class BasketController {
 
     private final BasketApprovalService approvalService;
     private final BasketFlagService flagService;
+    private final CheckoutLinksService checkoutLinksService;
 
-    public BasketController(BasketApprovalService approvalService, BasketFlagService flagService) {
+    public BasketController(
+            BasketApprovalService approvalService,
+            BasketFlagService flagService,
+            CheckoutLinksService checkoutLinksService) {
         this.approvalService = approvalService;
         this.flagService = flagService;
+        this.checkoutLinksService = checkoutLinksService;
     }
 
     @Operation(
@@ -49,5 +57,15 @@ public class BasketController {
             @PathVariable("id") UUID id, @PathVariable("itemId") UUID itemId) {
         BasketJpaEntity updated = flagService.resolveFlag(id, itemId);
         return ResponseEntity.ok(BasketDto.fromEntity(updated));
+    }
+
+    @Operation(
+            summary = "Get handoff checkout URLs for a basket",
+            description =
+                    "Returns a map of retailer key to handoff URL. Retailers that do not"
+                            + " have a configured URL are omitted — never 500.")
+    @GetMapping("/{id}/checkout-links")
+    public ResponseEntity<Map<String, String>> checkoutLinks(@PathVariable("id") UUID id) {
+        return ResponseEntity.ok(checkoutLinksService.linksFor(id));
     }
 }
