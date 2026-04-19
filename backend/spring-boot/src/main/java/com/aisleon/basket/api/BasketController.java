@@ -1,6 +1,7 @@
 package com.aisleon.basket.api;
 
 import com.aisleon.basket.application.BasketApprovalService;
+import com.aisleon.basket.application.BasketFlagService;
 import com.aisleon.basket.infrastructure.BasketJpaEntity;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -17,9 +18,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class BasketController {
 
     private final BasketApprovalService approvalService;
+    private final BasketFlagService flagService;
 
-    public BasketController(BasketApprovalService approvalService) {
+    public BasketController(BasketApprovalService approvalService, BasketFlagService flagService) {
         this.approvalService = approvalService;
+        this.flagService = flagService;
     }
 
     @Operation(
@@ -34,5 +37,17 @@ public class BasketController {
     public ResponseEntity<BasketDto> approve(@PathVariable("id") UUID id) {
         BasketJpaEntity approved = approvalService.approve(id);
         return ResponseEntity.ok(BasketDto.fromEntity(approved));
+    }
+
+    @Operation(
+            summary = "Mark a substitution flag as accepted on a basket item",
+            description =
+                    "Returns 400 if the targeted item has no flag; 404 if the basket"
+                            + " or item cannot be found.")
+    @PostMapping("/{id}/items/{itemId}/resolve-flag")
+    public ResponseEntity<BasketDto> resolveFlag(
+            @PathVariable("id") UUID id, @PathVariable("itemId") UUID itemId) {
+        BasketJpaEntity updated = flagService.resolveFlag(id, itemId);
+        return ResponseEntity.ok(BasketDto.fromEntity(updated));
     }
 }

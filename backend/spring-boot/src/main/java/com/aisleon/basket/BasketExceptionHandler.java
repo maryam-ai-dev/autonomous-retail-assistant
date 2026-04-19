@@ -73,4 +73,16 @@ public class BasketExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(Map.of("reason", "BASKET_NOT_FOUND"));
     }
+
+    @ExceptionHandler(BasketItemNotFoundException.class)
+    public ResponseEntity<Map<String, String>> handleItemNotFound(BasketItemNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Map.of("reason", "BASKET_ITEM_NOT_FOUND"));
+    }
+
+    @ExceptionHandler(FlagNotPresentException.class)
+    public ResponseEntity<Map<String, String>> handleFlagNotPresent(FlagNotPresentException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("reason", "FLAG_NOT_PRESENT"));
+    }
 }
