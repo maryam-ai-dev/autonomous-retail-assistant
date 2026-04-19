@@ -2,6 +2,7 @@
 
 from fastapi import FastAPI
 
+from app.api.intent_router import router as intent_router
 from app.api.ranking_router import router as ranking_router
 from app.api.scrapers_router import router as scrapers_router
 from app.api.substitution_router import router as substitution_router
@@ -15,6 +16,7 @@ app = FastAPI(
 app.include_router(ranking_router)
 app.include_router(scrapers_router)
 app.include_router(substitution_router)
+app.include_router(intent_router)
 
 
 @app.get("/health")
