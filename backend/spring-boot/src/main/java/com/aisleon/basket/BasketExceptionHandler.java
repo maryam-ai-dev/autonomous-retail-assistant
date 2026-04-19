@@ -50,4 +50,27 @@ public class BasketExceptionHandler {
                         "reason", "AI_SERVICE_UNAVAILABLE",
                         "detail", ex.getMessage() == null ? "" : ex.getMessage()));
     }
+
+    @ExceptionHandler(UnresolvedFlagsException.class)
+    public ResponseEntity<Map<String, Object>> handleUnresolved(UnresolvedFlagsException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(Map.of(
+                        "reason", "UNRESOLVED_FLAGS",
+                        "unresolvedCount", ex.unresolvedCount()));
+    }
+
+    @ExceptionHandler(BudgetExceededException.class)
+    public ResponseEntity<Map<String, Object>> handleBudgetExceeded(BudgetExceededException ex) {
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
+                .body(Map.of(
+                        "reason", "BUDGET_EXCEEDED",
+                        "totalCost", ex.totalCost(),
+                        "budget", ex.budget()));
+    }
+
+    @ExceptionHandler(BasketNotFoundException.class)
+    public ResponseEntity<Map<String, String>> handleNotFound(BasketNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Map.of("reason", "BASKET_NOT_FOUND"));
+    }
 }
