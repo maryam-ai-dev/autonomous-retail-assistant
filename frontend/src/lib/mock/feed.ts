@@ -32,7 +32,7 @@ export const MOCK_FEED_PAGE: FeedPage = {
       product: null,
       basket: {
         basketId: "bk_approved_020",
-        title: "Weekly halal groceries",
+        title: "Halal skincare bundle",
         total: 64.3,
         itemThumbnails: [],
       },

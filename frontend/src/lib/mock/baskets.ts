@@ -5,7 +5,7 @@ type Basket = components["schemas"]["BasketDto"];
 export const MOCK_BASKET_DRAFT: Basket = {
   id: "bk_draft_001",
   status: "DRAFT",
-  intentText: "weekly groceries under £70, halal",
+  intentText: "halal skincare and haircare bundle under £70",
   budget: 70,
   totalCost: 58.4,
   items: [
@@ -47,7 +47,7 @@ export const MOCK_BASKET_DRAFT: Basket = {
 export const MOCK_BASKET_FLAGGED: Basket = {
   id: "bk_flag_001",
   status: "DRAFT",
-  intentText: "weekly groceries under £70, halal",
+  intentText: "halal skincare and haircare bundle under £70",
   budget: 70,
   totalCost: 63.1,
   items: [

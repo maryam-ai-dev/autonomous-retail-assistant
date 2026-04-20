@@ -85,7 +85,7 @@ const DIETARY_ITEMS: { key: keyof DietaryAnswers; label: string; description?: s
     key: "halal",
     label: "Halal",
     description:
-      "We'll show you which items are verified, likely, or unknown",
+      "For health and beauty products, we'll show which items are halal-certified, likely suitable, or need manual checking. This applies to cosmetics, supplements, and skincare — not to clothing or homeware.",
   },
   { key: "vegan", label: "Vegan" },
   { key: "vegetarian", label: "Vegetarian" },
@@ -234,7 +234,7 @@ export function IntentStep({
         id="onboarding-intent"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder="Weekly groceries under £70, halal"
+        placeholder="mascara and skincare under £40, halal"
         rows={4}
         className="w-full rounded-xl px-4 py-3 text-sm outline-none"
         style={{

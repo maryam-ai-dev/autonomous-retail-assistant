@@ -164,7 +164,7 @@ function HomeContent() {
             value={intent}
             onChange={(e) => setIntent(e.target.value)}
             rows={3}
-            placeholder="Weekly groceries under £70, halal"
+            placeholder="trainers under £60, size 6"
             className="w-full rounded-xl px-4 py-3 text-sm outline-none italic placeholder:italic"
             style={{
               background: "var(--cream)",

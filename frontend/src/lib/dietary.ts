@@ -11,8 +11,8 @@ export type DietaryColour = "sage" | "amber" | "muted";
 export type DietaryUI = { label: string; colour: DietaryColour; tooltip: string };
 
 // Sprint B12.4: tooltip copy reframed for non-food scope (cosmetics,
-// haircare, fragrance, supplements). Aisleon no longer covers grocery — halal
-// status for food is owned by NourishOS.
+// haircare, fragrance, supplements). Food halal is out of scope — owned by
+// NourishOS.
 export const DIETARY_UI: Record<DietaryTag, DietaryUI> = {
   HALAL_VERIFIED: {
     label: "Verified halal",
