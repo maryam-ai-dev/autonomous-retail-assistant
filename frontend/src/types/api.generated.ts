@@ -13,6 +13,7 @@ export type RetailerKey =
   | "SAINSBURYS"
   | "BOOTS"
   | "ARGOS"
+  | "ASOS"
   | "ASDA"
   | "MORRISONS"
   | "OCADO";
@@ -62,6 +63,8 @@ export interface components {
       } | null;
       normalizationWarnings: string[];
       whyThis: string;
+      subcategory?: string | null;
+      sizeText?: string | null;
     };
     BasketDto: {
       id: string;
@@ -100,6 +103,8 @@ export interface components {
           hasHalalUnknown: boolean;
         } | null;
         tags?: string[];
+        category?: string | null;
+        subcategoryMix?: string[];
       } | null;
       reactions: { type: ReactionType; count: number }[];
       commentCount: number;

@@ -5,6 +5,11 @@ import { RetailerBadge } from "@/shared/ui/RetailerBadge";
 import type { components } from "@/types/api.generated";
 import type { DietaryTag } from "@/lib/dietary";
 import { DIETARY_UI } from "@/lib/dietary";
+import {
+  formatSizeBadge,
+  isFashionSubcategory,
+  isSizeDependentSubcategory,
+} from "@/lib/fashion";
 
 type BasketItem = components["schemas"]["BasketItemDto"];
 
@@ -82,6 +87,10 @@ export function BasketItemCard({
         </div>
         <div className="flex items-center gap-2">
           <RetailerBadge retailer={item.retailer} />
+          <SizePresentation
+            subcategory={item.subcategory ?? null}
+            sizeText={item.sizeText ?? null}
+          />
           {hasWarnings ? (
             <span
               role="img"
@@ -138,6 +147,40 @@ export function BasketItemCard({
       </div>
       </div>
     </li>
+  );
+}
+
+function SizePresentation({
+  subcategory,
+  sizeText,
+}: {
+  subcategory: string | null;
+  sizeText: string | null;
+}) {
+  if (!isFashionSubcategory(subcategory)) return null;
+  if (!isSizeDependentSubcategory(subcategory)) return null;
+  const formatted = formatSizeBadge(subcategory, sizeText);
+  if (formatted) {
+    return (
+      <span
+        className="inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold"
+        style={{
+          background: "var(--clay-light)",
+          color: "var(--clay)",
+        }}
+      >
+        {formatted}
+      </span>
+    );
+  }
+  return (
+    <span
+      title="Size availability couldn't be confirmed for this item — check the retailer site before purchasing"
+      className="text-[11px] italic"
+      style={{ color: "var(--muted)" }}
+    >
+      Size unconfirmed
+    </span>
   );
 }
 

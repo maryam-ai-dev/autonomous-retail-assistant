@@ -10,6 +10,7 @@ import { RetailerBadge } from "@/shared/ui/RetailerBadge";
 import type { components } from "@/types/api.generated";
 import type { DietaryTag } from "@/lib/dietary";
 import { DIETARY_UI } from "@/lib/dietary";
+import { isAllFashion, styleTagsForBasket } from "@/lib/fashion";
 import { toggleReaction } from "./reactions";
 
 type Post = components["schemas"]["PostDto"];
@@ -206,6 +207,8 @@ function BasketPostCard({
   const hasPleaseVerify = Boolean(
     dietary && (dietary.hasHalalLikely || dietary.hasHalalUnknown),
   );
+  const showStyleTags = isAllFashion(basket.category, basket.subcategoryMix);
+  const styleTags = showStyleTags ? styleTagsForBasket(basket.subcategoryMix) : [];
   return (
     <div
       className="flex flex-col gap-3 rounded-xl p-3"
@@ -247,6 +250,27 @@ function BasketPostCard({
           >
             {basket.title}
           </span>
+          {styleTags.length > 0 ? (
+            <div
+              className="flex flex-wrap gap-1.5"
+              role="list"
+              aria-label="Style tags"
+            >
+              {styleTags.map((tag) => (
+                <span
+                  key={tag}
+                  role="listitem"
+                  className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
+                  style={{
+                    background: "var(--clay-light)",
+                    color: "var(--clay)",
+                  }}
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          ) : null}
           {hasPleaseVerify ? (
             <span className="text-xs" style={{ color: "#6B2A11" }}>
               Contains items marked &lsquo;please verify&rsquo;
