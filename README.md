@@ -1,44 +1,42 @@
 # Aisleon
 
-A trust-aware autonomous retail assistant with a software-first architecture and simulated robotics extension.
+A budget-first AI shopping agent with a social layer for UK shoppers.
 
 ## Overview
 
-Aisleon is a multi-service system that autonomously discovers, evaluates, and purchases retail products on behalf of users while enforcing trust constraints at every step. Unlike conventional shopping assistants, Leon treats every purchase decision as a trust decision - products are ranked by trust scores, purchases require policy-based approval, and every action is audit-logged. The system extends into a simulated robotics layer where a ROS 2 robot navigates a virtual store to guide customers to products.
+Aisleon turns a free-text basket intent ("weekly groceries under £70, halal") into a DRAFT basket assembled across UK retailers - Tesco, Sainsbury's, Boots, and Argos - matched to the user's taste profile and budget. Spring Boot owns the final truth on basket validity (budget, dietary, size, retailer rules); FastAPI proposes candidates and wording via Claude Sonnet but never enforces constraints. A social feed lets users share approved baskets, fork them into their own, and follow shoppers with similar taste.
 
 ## Key Highlights
 
-- **Trust-first purchasing** - every product is scored for trust (merchant reliability, constraint satisfaction, substitution risk) before it reaches the user
-- **Policy-enforced approvals** - purchases that exceed budget thresholds or involve unapproved merchants are held for explicit user approval
-- **Full audit trail** - every search, cart action, approval decision, and checkout is recorded as a domain event
-- **Dual-connector discovery** - eBay API connector with Playwright browser fallback for resilient product sourcing
-- **Simulated robotics** - ROS 2 navigation stack with Isaac Sim integration for in-store customer guidance scenarios
+- **Budget authority is explicit** - Spring re-validates every FastAPI-proposed basket, trims lowest-priority items until within budget, and rejects untrimmable intents with 422
+- **Deterministic constraints, not LLM guesswork** - dietary (halal/vegan/vegetarian), size, retailer allow/deny, and substitution detection are enforced by `BasketConstraintEngine`, not by the model
+- **Resilient connectors** - Tesco via Apify, Sainsbury's / Boots / Argos via Playwright, per-retailer retry + timeout + Resilience4j circuit breakers, 6h Redis cache with stale fallback
+- **Inline basket approval** - `POST /api/baskets/{id}/approve` with substitution-flag gating; no separate approval queue (the old `/api/approvals/*` routes now return 410 Gone)
+- **Social + shared baskets** - posts with reactions (`TRIED_THIS`, `BETTER_ALT`, `WOULDNT_RECOMMEND`), cursor-paginated feed, follows, polymorphic comments, public share links, and fork-to-your-own-basket
+- **Budget history + insights** - monthly aggregation from BASKET_APPROVED audit events, plus Claude-generated insights with a hallucination guard that drops any figure not present in the summary
 
 ## System Overview
 
 ```
 ┌──────────────────────────────────────────────────────────┐
 │                     CLIENT LAYER                         │
-│              Next.js · App Router · Tailwind             │
-│   Search │ Cart │ Approvals │ Trust │ Audit │ Robotics   │
+│        Next.js 16 · App Router · React 19 · Tailwind 4   │
+│  Search │ Feed │ Basket │ Budget │ Profile │ Settings    │
 └────────────────────────┬─────────────────────────────────┘
                          │
 ┌────────────────────────┼─────────────────────────────────┐
 │                  AUTHORITY LAYER                          │
-│           Spring Boot · Java 17 · DDD · Events           │
-│  Discovery │ Cart │ Policy │ Approval │ Checkout │ Audit  │
+│          Spring Boot 3.3 · Java 17 · DDD · Events         │
+│  basket-intent │ catalogue │ scraping │ policy │ approval │
+│  cart │ checkout │ merchant │ social │ shared_baskets     │
+│  budget │ preferences │ identity │ audit                  │
 └────────────────────────┬─────────────────────────────────┘
                          │
 ┌────────────────────────┼─────────────────────────────────┐
 │                INTELLIGENCE LAYER                         │
-│              FastAPI · Python 3.11+ · Pydantic            │
-│    Ranking │ Explainability │ Trust Scoring │ Substitution │
-└──────────────────────────────────────────────────────────┘
-
-┌──────────────────────────────────────────────────────────┐
-│                  ROBOTICS LAYER                           │
-│            ROS 2 · Isaac Sim · WebSocket Bridge           │
-│  Navigation │ Task Planner │ Handoff │ Store Map │ Bridge │
+│           FastAPI · Python 3.11 · Claude Sonnet           │
+│  intent_parsing │ basket_generation │ budget_insights     │
+│  scrapers (Playwright) │ ranking │ substitution_analysis  │
 └──────────────────────────────────────────────────────────┘
 ```
 
@@ -46,128 +44,135 @@ Aisleon is a multi-service system that autonomously discovers, evaluates, and pu
 
 | Layer | Technology | Purpose |
 |-------|-----------|---------|
-| Client | Next.js 15, TypeScript, Tailwind CSS | Dashboard, search, cart, approvals, robotics UI |
-| Authority | Spring Boot 3.3, Java 17, PostgreSQL 16 | Domain logic, API, auth, persistence, events |
-| Intelligence | FastAPI, Python 3.11+, Pydantic | Ranking, trust scoring, explainability, substitution analysis |
-| Robotics | ROS 2, Isaac Sim | Navigation, task planning, handoff, simulation |
-| Infrastructure | Docker Compose, Flyway, JWT | Orchestration, migrations, authentication |
+| Client | Next.js 16, React 19, TypeScript strict, Tailwind 4 | App shell, basket flow, social feed, budget views |
+| Authority | Spring Boot 3.3, Java 17, PostgreSQL 16, Flyway, JWT | Domain logic, REST API, final basket validation, event publishing, audit log |
+| Intelligence | FastAPI, Python 3.11, Pydantic, Claude Sonnet (`claude-sonnet-4-20250514`), Playwright | Intent parsing, basket generation, budget insights, Playwright scrapers |
+| Scraping | Apify (Tesco), Playwright (Sainsbury's / Boots / Argos) | UK retailer product discovery |
+| Cache | Redis (6h TTL, stale fallback < 24h) | Catalogue result cache |
+| Infrastructure | Docker Compose, Flyway, Resilience4j | Orchestration, migrations, circuit breakers |
 
 ## Repo Structure
 
 ```
 aisleon/
 ├── backend/
-│   ├── spring-boot/       # Authority layer — DDD modules, REST API, domain events
-│   ├── ai-service/        # Intelligence layer — ranking, trust scoring, substitution
-│   └── contracts/         # Shared API contracts (normalized product schema)
-├── frontend/              # Client layer — Next.js App Router dashboard
-├── robotics/
-│   ├── ros2_ws/           # ROS 2 workspace — nodes, interfaces, launch files
-│   └── simulation/        # Isaac Sim worlds, robot config, scenarios
-├── docs/                  # Architecture docs, trust model, ADRs
-├── scenarios/             # End-to-end scenario descriptions
-├── docker-compose.yml     # Local development orchestration
+│   ├── spring-boot/      # Authority — DDD modules, REST API, domain events
+│   │   └── src/main/java/com/aisleon/
+│   │       ├── basket/          # intents, candidates, generation, approval
+│   │       ├── catalogue/       # NormalizedProduct, dedup, dietary tagging
+│   │       ├── scraping/        # connector registry, cache, circuit breakers
+│   │       ├── policy/          # basket constraint engine
+│   │       ├── cart/ checkout/ merchant/ approval/
+│   │       ├── social/          # posts, feed, follows, comments, reactions
+│   │       ├── shared_baskets/  # share + public view + fork
+│   │       ├── budget/          # monthly summary aggregation
+│   │       ├── preferences/     # taste + clothing profiles
+│   │       ├── identity/        # auth (JWT), profile
+│   │       └── audit/           # append-only event log
+│   ├── ai-service/       # Intelligence — FastAPI + Claude Sonnet
+│   │   └── app/
+│   │       ├── intent_parsing/  basket_generation/  budget_insights/
+│   │       ├── scrapers/        # Playwright connectors
+│   │       └── ranking/         substitution_analysis/
+│   └── contracts/        # OpenAPI spec + shared JSON schemas
+├── frontend/             # Next.js App Router client
+├── scenarios/            # End-to-end scenario descriptions
+├── docs/                 # Architecture + ADRs
+├── _archived/            # Robotics prototype (removed per sprint B11.1)
+├── SPRINT_PLAN_BACKEND.md  SPRINT_PLAN_FRONTEND.md
+├── CLAUDE.md             # Source of truth for agent + conventions
+├── docker-compose.yml
 ```
 
 ## Quick Start
 
-### Backend + Frontend (Docker)
+### Full stack (Docker)
 
 ```bash
 cp .env.example .env
-docker-compose up -d
+# Fill in JWT_SECRET, POSTGRES_*, ANTHROPIC_API_KEY, APIFY_API_KEY
+docker compose up
 ```
 
-This starts PostgreSQL, Spring Boot, the AI service, and the Next.js frontend.
+This starts PostgreSQL, Spring Boot, FastAPI, and the Next.js frontend.
 
-### Backend (without Docker)
+### Services individually
 
 ```bash
-# Terminal 1 — PostgreSQL (requires local install or Docker)
-docker run -d --name aisleon-db -e POSTGRES_DB=aisleon -e POSTGRES_USER=aisleon -e POSTGRES_PASSWORD=aisleon -p 5432:5432 postgres:16-alpine
+# Spring Boot (requires Postgres + .env)
+cd backend/spring-boot && ./mvnw spring-boot:run
 
-# Terminal 2 — Spring Boot
-cd backend/spring-boot
-cp ../../.env.example ../../.env
-./mvnw spring-boot:run
-
-# Terminal 3 — AI Service
+# FastAPI intelligence service (requires ANTHROPIC_API_KEY for live LLM calls)
 cd backend/ai-service
 pip install -r requirements.txt
 uvicorn app.main:app --reload --port 8000
 
-# Terminal 4 — Frontend
+# Frontend
 cd frontend
 npm install
 npm run dev
+# Or with mock fixtures — no backend needed:
+# echo 'NEXT_PUBLIC_USE_MOCKS=true' >> .env.local && npm run dev
 ```
 
-### ROS 2 (separate)
+### Running Flyway migrations manually
 
 ```bash
-cd robotics/ros2_ws
-colcon build
-source install/setup.bash
-ros2 launch retail_robot_bringup retail_robot.launch.py
+cd backend/spring-boot && ./mvnw flyway:migrate
 ```
-
-The simulation bridge serves robot state at `http://localhost:8765/state`.
 
 ## Domain Modelling
 
-The Spring Boot backend uses two modelling approaches:
+Spring Boot uses two modelling approaches:
 
-**DDD modules** (rich domain logic): discovery, cart, policy, approval, checkout, merchant, preferences
-- Domain objects are pure Java with no framework annotations
+**DDD modules** (rich domain logic): `basket-intent`, `catalogue`, `scraping`, `cart`, `policy`, `approval`, `checkout`, `merchant`, `social`, `shared_baskets`, `budget-history`
+- Domain objects are pure Java records with no framework annotations
 - JPA entities live in `infrastructure/` with explicit mappers
 - Application services orchestrate domain logic and publish events
 
-**CRUD modules** (simple persistence): identity/auth, identity/profile, audit
+**CRUD modules** (simple persistence): `identity/auth`, `identity/profile`, `preferences`, `audit`, `common`
 - Standard controller → service → repository flow
-- No domain layer needed
 
-**Domain events** drive cross-module communication:
+**First-class basket concepts** (do not conflate):
 
-| Event | Publisher | Consumer |
-|-------|----------|----------|
-| ProductCandidatesRankedEvent | discovery | audit |
-| CartItemAddedEvent | cart | audit |
-| ApprovalRequiredEvent | cart | audit |
-| CartCheckedOutEvent | cart | audit |
-| ApprovalRequestedEvent | approval | audit |
-| PurchaseAuthorizedEvent | approval | audit, checkout |
-| PurchaseRejectedEvent | approval | audit |
-| CheckoutCompletedEvent | checkout | audit |
-| CheckoutFailedEvent | checkout | audit |
+| Concept | What it is |
+|---|---|
+| `BasketIntent` | Raw user text + parsed structured fields |
+| `CandidatePool` | NormalizedProducts after constraint filtering |
+| `GeneratedDraft` | FastAPI output — a proposal, not validated yet |
+| `Basket` (DRAFT) | Persisted, Spring-validated, awaiting user review |
+| `Basket` (APPROVED) | User-approved, ready for checkout handoff |
+| `Basket` (CHECKED_OUT) | User confirmed purchase on retailer site |
+| `SharedBasket` | Public snapshot of an APPROVED basket |
 
-## Trust Model
+**Domain events** drive cross-module communication and feed the append-only audit log:
 
-The system enforces five core trust rules:
+| Event | Publisher | Consumers |
+|-------|----------|-----------|
+| `BasketGeneratedEvent` | basket | audit |
+| `BasketApprovedEvent` | basket | audit, budget-history |
+| `SubstitutionAcceptedEvent` | basket | audit |
+| `ApprovalRequiredEvent` | cart | audit |
+| `PurchaseAuthorizedEvent` | approval | audit, checkout |
+| `CheckoutCompletedEvent` | checkout | audit |
 
-1. **Every product gets a trust score** - combining merchant reliability, constraint satisfaction, substitution risk, and recommendation confidence into an overall score
-2. **Purchases above threshold require approval** - if the cart total exceeds the user's approval threshold, checkout is blocked until explicitly approved
-3. **Unapproved merchants trigger warnings** - items from merchants not on the approved list generate policy warnings
-4. **Unsafe substitutions are flagged** - if a substitute product changes brand or increases price by more than 10%, it requires approval
-5. **Every action is auditable** - searches, cart changes, approvals, and checkouts are recorded as timestamped domain events
+## Budget Authority & Constraints
+
+Spring Boot owns the final truth on basket validity. FastAPI is advisory.
+
+1. **`BasketConstraintEngine` (Spring)** - pre-generation filter. Removes candidates that violate hard rules (budget ceiling, halal filter on `MEAT_POULTRY`, fashion size, retailer allow/deny) before they ever reach the LLM
+2. **FastAPI basket generator** - advisory. Prioritises and explains candidates; retries once with a "reduce cost" nudge if over budget
+3. **Spring post-generation validation** - final authority. Re-validates against budget, trims lowest-priority items (`price / confidenceScore` ratio) until within budget, rejects with 422 `BUDGET_TOO_LOW_FOR_INTENT` if untrimmable
+4. **Spring on basket approval** - final gate. `basket.totalCost ≤ intent.budget` is re-checked before `DRAFT → APPROVED` transition; unresolved substitution flags return 409
+
+`HALAL_VERIFIED` items are never trimmed before `HALAL_LIKELY` / `HALAL_UNKNOWN` equivalents exist, and items with a resolved substitution flag are deprioritised for trimming — the user explicitly kept them.
 
 ## Scenarios
 
-- [Guided Product Search](scenarios/guided-product-search.md) - search, rank, trust-score, and display products
-- [Approval-Required Purchase](scenarios/approval-required-purchase.md) - policy triggers, approval flow, checkout
-- [Unsafe Substitution Blocked](scenarios/unsafe-substitution-blocked.md) - substitution analysis and risk detection
-- [Robot Guides Customer to Aisle](scenarios/robot-guides-customer-to-aisle.md) - ROS 2 navigation and handoff
-
-## Isaac Sim
-
-The robotics layer includes configuration for NVIDIA Isaac Sim, but Isaac Sim is **not required** to run the system. All ROS 2 nodes run independently with simulated navigation timing. Isaac Sim adds visual simulation for those with compatible hardware:
-
-- NVIDIA GPU with 8 GB+ VRAM (RTX 2070 or higher)
-- NVIDIA driver 525.60+
-- Isaac Sim 2023.1.0+
-- 32 GB system RAM recommended
-
-See [robotics/simulation/isaac_sim/worlds/README.md](robotics/simulation/isaac_sim/worlds/README.md) for setup details.
+- [Guided Product Search](scenarios/guided-product-search.md) — intent parsing, candidate selection, ranking
+- [Approval-Required Purchase](scenarios/approval-required-purchase.md) — inline approval, substitution-flag gating, checkout handoff
+- [Unsafe Substitution Blocked](scenarios/unsafe-substitution-blocked.md) — substitution detection and user review
 
 ## License
 
-[Apache License 2.0](LICENSE) - Copyright 2026 Maryam Yousuf
+[Apache License 2.0](LICENSE) — Copyright 2026 Maryam Yousuf
