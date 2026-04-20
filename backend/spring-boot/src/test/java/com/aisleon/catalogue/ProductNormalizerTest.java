@@ -43,25 +43,27 @@ class ProductNormalizerTest {
 
     @Test
     void halalLikelyAddsNormalizationWarning() {
+        // B12.4: HALAL_LIKELY is brand-only for non-food. A known-halal brand
+        // in HEALTH_BEAUTY resolves to HALAL_LIKELY with an inference warning.
         RawScraperProduct raw = new RawScraperProduct(
                 "p1",
-                "Fresh salmon fillet 200g",
-                "Tesco",
-                ProductCategory.GROCERY,
-                ProductSubcategory.FISH_SEAFOOD,
-                new BigDecimal("4.50"),
+                "Inika hydrating shampoo 250ml",
+                "Inika Organic",
+                ProductCategory.HEALTH_BEAUTY,
+                ProductSubcategory.HAIRCARE,
+                new BigDecimal("12.00"),
                 false,
-                new BigDecimal("2.25"),
-                "per 100g",
-                "200g",
-                "https://img.example/salmon.jpg",
-                "https://tesco.com/p/1",
+                null,
+                null,
+                "250ml",
+                "https://img.example/shampoo.jpg",
+                "https://boots.com/p/1",
                 true,
                 true,
                 List.of(),
                 List.of(),
                 Instant.now());
-        NormalizedProduct np = normalizer.normalize(raw, Retailer.TESCO);
+        NormalizedProduct np = normalizer.normalize(raw, Retailer.BOOTS);
         assertThat(np.dietaryTags()).contains(DietaryTag.HALAL_LIKELY);
         assertThat(np.normalizationWarnings()).isNotEmpty();
     }

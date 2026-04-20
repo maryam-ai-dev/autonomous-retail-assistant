@@ -26,16 +26,39 @@ class BasketConstraintEngineTest {
     }
 
     @Test
-    void dietaryFilterRemovesHalalUnknownMeatOnly() {
-        NormalizedProduct chickenUnknown = product("p1", "chicken", ProductSubcategory.MEAT_POULTRY, List.of(DietaryTag.HALAL_UNKNOWN));
-        NormalizedProduct chickenVerified = product("p2", "chicken", ProductSubcategory.MEAT_POULTRY, List.of(DietaryTag.HALAL_VERIFIED));
-        NormalizedProduct apple = product("p3", "apple", ProductSubcategory.FRUIT_VEG, List.of());
+    void dietaryFilterRemovesHalalUnknownHealthBeauty() {
+        // B12.4: halal_only excludes HALAL_UNKNOWN from HEALTH_BEAUTY
+        // subcategories. Fashion/electronics carry no halal tag and are
+        // untouched by the filter.
+        NormalizedProduct shampooUnknown = healthBeauty(
+                "p1", ProductSubcategory.HAIRCARE, List.of(DietaryTag.HALAL_UNKNOWN));
+        NormalizedProduct shampooVerified = healthBeauty(
+                "p2", ProductSubcategory.HAIRCARE, List.of(DietaryTag.HALAL_VERIFIED));
+        NormalizedProduct dress = new NormalizedProduct(
+                "p3", "dress", "dress", "brand",
+                Retailer.ASOS,
+                ProductCategory.FASHION, ProductSubcategory.DRESSES,
+                new BigDecimal("20.00"), null, null, null, null, null,
+                true, true, List.of(), List.of(), List.of(),
+                0.9, Instant.now(), List.of(), List.of());
         TasteProfile profile = new TasteProfile(true, false, false, List.of(), List.of(), List.of());
 
         List<NormalizedProduct> filtered = engine.applyDietaryFilter(
-                List.of(chickenUnknown, chickenVerified, apple), profile);
+                List.of(shampooUnknown, shampooVerified, dress), profile);
 
-        assertThat(filtered).containsExactly(chickenVerified, apple);
+        assertThat(filtered).containsExactly(shampooVerified, dress);
+    }
+
+    private static NormalizedProduct healthBeauty(
+            String id, ProductSubcategory sub, List<DietaryTag> dietary) {
+        return new NormalizedProduct(
+                id, id, id, "brand",
+                Retailer.BOOTS,
+                ProductCategory.HEALTH_BEAUTY, sub,
+                new BigDecimal("5.00"),
+                null, null, null, null, null,
+                true, true, dietary, List.of(), List.of(),
+                0.9, Instant.now(), List.of(), List.of());
     }
 
     @Test

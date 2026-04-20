@@ -6,72 +6,102 @@ import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
+/**
+ * Sprint B12.4 — halal classification for non-food. Only HEALTH_BEAUTY
+ * subcategories plus VITAMINS_SUPPLEMENTS attract halal tags. FASHION,
+ * ELECTRONICS and GENERAL_MERCHANDISE never carry a halal tag.
+ */
 class DietaryTaggingServiceTest {
 
     private final DietaryTaggingService service = new DietaryTaggingService();
 
     @Test
-    void tescoHalalChickenIsHalalUnknown() {
+    void unknownShampooIsHalalUnknownWithNonFoodWarning() {
         var result = service.classifyHalal(
-                "Tesco",
-                ProductSubcategory.MEAT_POULTRY,
+                "RandomBrand",
+                ProductCategory.HEALTH_BEAUTY,
+                ProductSubcategory.HAIRCARE,
                 List.of());
         assertThat(result.halalTag()).isEqualTo(Optional.of(DietaryTag.HALAL_UNKNOWN));
-        assertThat(result.warnings()).isNotEmpty();
+        assertThat(result.warnings())
+                .anyMatch(w -> w.toLowerCase().contains("alcohol")
+                        || w.toLowerCase().contains("porcine"));
     }
 
     @Test
-    void knownHalalBrandIsHalalLikelyWithWarning() {
-        // B12.1: known_halal_brands.txt now lists non-food halal brands only.
-        // The DietaryTaggingService still resolves HALAL_LIKELY via brand match
-        // regardless of subcategory — B12.4 will narrow this to HEALTH_BEAUTY.
+    void knownHalalBrandShampooIsHalalLikelyWithBrandWarning() {
         var result = service.classifyHalal(
                 "Inika Organic",
-                ProductSubcategory.MEAT_POULTRY,
+                ProductCategory.HEALTH_BEAUTY,
+                ProductSubcategory.HAIRCARE,
                 List.of());
         assertThat(result.halalTag()).isEqualTo(Optional.of(DietaryTag.HALAL_LIKELY));
-        assertThat(result.warnings()).isNotEmpty();
+        assertThat(result.warnings())
+                .anyMatch(w -> w.toLowerCase().contains("brand"));
     }
 
     @Test
-    void fishIsHalalLikelyWithWarning() {
+    void halalCertifiedFragranceIsHalalVerified() {
         var result = service.classifyHalal(
-                "Tesco",
-                ProductSubcategory.FISH_SEAFOOD,
-                List.of());
-        assertThat(result.halalTag()).isEqualTo(Optional.of(DietaryTag.HALAL_LIKELY));
-        assertThat(result.warnings()).isNotEmpty();
-    }
-
-    @Test
-    void appleHasNoHalalTag() {
-        // Fruit/veg is in the HALAL_LIKELY subcategories list per the plan,
-        // so the service infers HALAL_LIKELY with an inference warning.
-        var result = service.classifyHalal(
-                "Tesco",
-                ProductSubcategory.FRUIT_VEG,
-                List.of());
-        assertThat(result.halalTag()).isEqualTo(Optional.of(DietaryTag.HALAL_LIKELY));
-        assertThat(result.warnings()).isNotEmpty();
-    }
-
-    @Test
-    void halalCertifiedBrandIsHalalVerified() {
-        var result = service.classifyHalal(
-                "SomeBrand",
-                ProductSubcategory.MEAT_POULTRY,
+                "SomeHouse",
+                ProductCategory.HEALTH_BEAUTY,
+                ProductSubcategory.FRAGRANCE,
                 List.of(CertificationTag.HALAL_CERTIFIED));
         assertThat(result.halalTag()).isEqualTo(Optional.of(DietaryTag.HALAL_VERIFIED));
         assertThat(result.warnings()).isEmpty();
     }
 
     @Test
-    void unrelatedCategoryReturnsNoHalalTag() {
+    void fashionDressHasNoHalalTag() {
         var result = service.classifyHalal(
-                "Tesco",
-                ProductSubcategory.LAPTOPS,
+                "ASOS DESIGN",
+                ProductCategory.FASHION,
+                ProductSubcategory.DRESSES,
                 List.of());
         assertThat(result.halalTag()).isEmpty();
         assertThat(result.warnings()).isEmpty();
+    }
+
+    @Test
+    void electronicsHasNoHalalTag() {
+        var result = service.classifyHalal(
+                "Samsung",
+                ProductCategory.ELECTRONICS,
+                ProductSubcategory.PHONES,
+                List.of());
+        assertThat(result.halalTag()).isEmpty();
+    }
+
+    @Test
+    void generalMerchandiseHasNoHalalTag() {
+        var result = service.classifyHalal(
+                "Russell Hobbs",
+                ProductCategory.GENERAL_MERCHANDISE,
+                ProductSubcategory.KITCHEN,
+                List.of());
+        assertThat(result.halalTag()).isEmpty();
+    }
+
+    @Test
+    void vitaminsSupplementsInHealthBeautyScopeIsHalalUnknown() {
+        var result = service.classifyHalal(
+                "GenericVitamins",
+                ProductCategory.HEALTH_BEAUTY,
+                ProductSubcategory.VITAMINS_SUPPLEMENTS,
+                List.of());
+        assertThat(result.halalTag()).isEqualTo(Optional.of(DietaryTag.HALAL_UNKNOWN));
+    }
+
+    @Test
+    void halalCertifiedFashionStillReturnsNoTagBecauseCategoryGatesFirst() {
+        // Category gate runs before certification check — a "halal certified"
+        // cotton dress still returns no halal tag because halal is not
+        // applicable to FASHION products.
+        var result = service.classifyHalal(
+                "SomeBrand",
+                ProductCategory.FASHION,
+                ProductSubcategory.DRESSES,
+                List.of(CertificationTag.HALAL_CERTIFIED));
+        assertThat(result.halalTag()).isEmpty();
     }
 }

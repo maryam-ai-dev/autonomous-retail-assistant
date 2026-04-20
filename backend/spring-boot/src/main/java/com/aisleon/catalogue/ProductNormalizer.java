@@ -35,7 +35,7 @@ public class ProductNormalizer {
         List<DietaryTag> dietaryTags = new ArrayList<>();
 
         var halal = dietaryTaggingService.classifyHalal(
-                raw.brand(), raw.subcategory(), raw.certificationTags());
+                raw.brand(), raw.category(), raw.subcategory(), raw.certificationTags());
         halal.halalTag().ifPresent(dietaryTags::add);
         warnings.addAll(halal.warnings());
 

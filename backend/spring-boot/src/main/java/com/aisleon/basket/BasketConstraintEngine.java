@@ -17,8 +17,24 @@ import org.springframework.stereotype.Service;
 @Service
 public class BasketConstraintEngine {
 
-    private static final EnumSet<ProductSubcategory> MEAT_SUBCATEGORIES =
-            EnumSet.of(ProductSubcategory.MEAT_POULTRY);
+    /**
+     * B12.4: halal_only excludes HALAL_UNKNOWN from every HEALTH_BEAUTY
+     * subcategory plus VITAMINS_SUPPLEMENTS. FASHION, ELECTRONICS and
+     * GENERAL_MERCHANDISE never carry halal tags so the filter has no
+     * business excluding them.
+     */
+    private static final EnumSet<ProductCategory> HALAL_FILTER_CATEGORIES =
+            EnumSet.of(ProductCategory.HEALTH_BEAUTY);
+
+    private static final EnumSet<ProductSubcategory> HALAL_FILTER_SUBCATEGORIES =
+            EnumSet.of(
+                    ProductSubcategory.SKINCARE,
+                    ProductSubcategory.HAIRCARE,
+                    ProductSubcategory.DENTAL,
+                    ProductSubcategory.VITAMINS_SUPPLEMENTS,
+                    ProductSubcategory.PHARMACY,
+                    ProductSubcategory.FRAGRANCE,
+                    ProductSubcategory.MAKEUP);
 
     private static final EnumSet<ProductCategory> FASHION_CATEGORIES =
             EnumSet.of(ProductCategory.FASHION);
@@ -38,8 +54,8 @@ public class BasketConstraintEngine {
         if (profile == null) return candidates;
         List<NormalizedProduct> out = new ArrayList<>(candidates.size());
         for (NormalizedProduct p : candidates) {
-            boolean isMeat = MEAT_SUBCATEGORIES.contains(p.subcategory());
-            if (profile.halalOnly() && isMeat
+            if (profile.halalOnly()
+                    && inHalalFilterScope(p)
                     && p.dietaryTags().contains(DietaryTag.HALAL_UNKNOWN)) {
                 continue;
             }
@@ -49,6 +65,11 @@ public class BasketConstraintEngine {
             out.add(p);
         }
         return out;
+    }
+
+    private static boolean inHalalFilterScope(NormalizedProduct p) {
+        return HALAL_FILTER_CATEGORIES.contains(p.category())
+                || HALAL_FILTER_SUBCATEGORIES.contains(p.subcategory());
     }
 
     /** Size-dependent fashion subcategories — all others pass the size filter untouched. */
