@@ -8,6 +8,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 from app.scrapers.argos_connector import ArgosConnector
+from app.scrapers.asos_connector import AsosConnector
 from app.scrapers.boots_connector import BootsConnector
 from app.scrapers.playwright_connector import PlaywrightConnector
 
@@ -23,6 +24,7 @@ class ScraperSearchRequest(BaseModel):
 _CONNECTORS: dict[str, type[PlaywrightConnector]] = {
     "BOOTS": BootsConnector,
     "ARGOS": ArgosConnector,
+    "ASOS": AsosConnector,
 }
 
 

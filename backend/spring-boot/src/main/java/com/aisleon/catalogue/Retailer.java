@@ -5,6 +5,7 @@ public enum Retailer {
     SAINSBURYS,
     BOOTS,
     ARGOS,
+    ASOS,
     ASDA,
     MORRISONS,
     OCADO,
