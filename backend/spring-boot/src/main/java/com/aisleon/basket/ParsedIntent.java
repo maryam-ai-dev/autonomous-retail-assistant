@@ -10,9 +10,21 @@ public record ParsedIntent(
         ProductCategory primaryCategory,
         List<String> tags,
         boolean halalRequired,
-        List<String> normalizationWarnings) {
+        List<String> normalizationWarnings,
+        boolean outOfScope,
+        String outOfScopeReason) {
     public ParsedIntent {
         if (tags == null) tags = List.of();
         if (normalizationWarnings == null) normalizationWarnings = List.of();
+    }
+
+    public ParsedIntent(
+            String rawText,
+            BigDecimal budget,
+            ProductCategory primaryCategory,
+            List<String> tags,
+            boolean halalRequired,
+            List<String> normalizationWarnings) {
+        this(rawText, budget, primaryCategory, tags, halalRequired, normalizationWarnings, false, null);
     }
 }

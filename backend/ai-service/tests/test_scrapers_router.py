@@ -30,4 +30,4 @@ def test_status_endpoint_returns_all_connectors() -> None:
     response = client.get("/scrapers/status")
     assert response.status_code == 200
     retailers = {item["retailer"] for item in response.json()}
-    assert retailers == {"SAINSBURYS", "BOOTS", "ARGOS"}
+    assert retailers == {"BOOTS", "ARGOS"}

@@ -77,12 +77,25 @@ def _coerce_intent(text: str, data: dict, warnings: list[str]) -> ParsedIntent:
             budget = None
             warnings.append("budget was not numeric; coerced to null")
 
-    category_raw = str(data.get("category", "GROCERY")).upper()
-    try:
-        category = IntentCategory(category_raw)
-    except ValueError:
-        warnings.append(f"unknown category {category_raw!r}; defaulting to GROCERY")
-        category = IntentCategory.GROCERY
+    out_of_scope_raw = data.get("outOfScope", data.get("out_of_scope"))
+    out_of_scope = bool(out_of_scope_raw) if out_of_scope_raw is not None else False
+    out_of_scope_reason = _as_optional_str(data.get("reason") or data.get("out_of_scope_reason"))
+
+    category_raw = str(data.get("category", "HEALTH_BEAUTY")).upper()
+    if category_raw == "GROCERY":
+        # LLM slipped back to GROCERY despite the prompt — coerce to out-of-scope
+        # so Spring can 422 it instead of surfacing grocery results.
+        warnings.append("LLM returned GROCERY category; coerced to out_of_scope=true")
+        out_of_scope = True
+        if out_of_scope_reason is None:
+            out_of_scope_reason = "grocery"
+        category = IntentCategory.HEALTH_BEAUTY
+    else:
+        try:
+            category = IntentCategory(category_raw)
+        except ValueError:
+            warnings.append(f"unknown category {category_raw!r}; defaulting to HEALTH_BEAUTY")
+            category = IntentCategory.HEALTH_BEAUTY
 
     return ParsedIntent(
         raw_text=text,
@@ -95,11 +108,13 @@ def _coerce_intent(text: str, data: dict, warnings: list[str]) -> ParsedIntent:
         item_hints=_as_str_list(data.get("item_hints")),
         timing=_as_optional_str(data.get("timing")),
         notes=_as_optional_str(data.get("notes")),
+        out_of_scope=out_of_scope,
+        out_of_scope_reason=out_of_scope_reason,
     )
 
 
 def _default_intent(text: str) -> ParsedIntent:
-    return ParsedIntent(raw_text=text, budget=None, category=IntentCategory.GROCERY)
+    return ParsedIntent(raw_text=text, budget=None, category=IntentCategory.HEALTH_BEAUTY)
 
 
 def _as_str_list(value: object) -> list[str]:

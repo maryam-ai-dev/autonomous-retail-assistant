@@ -88,6 +88,15 @@ public class BasketOrchestrationService {
         // 1. Parse intent via FastAPI
         ParsedIntent intent = aiBridge.parseIntent(rawText);
 
+        // 1a. Out-of-scope guard (grocery → NourishOS, etc.)
+        if (intent.outOfScope()) {
+            String reason = intent.outOfScopeReason() == null ? "unknown" : intent.outOfScopeReason();
+            log.info("BasketIntentOutOfScope: userId={} reason={}", userId, reason);
+            throw new com.aisleon.basket.OutOfScopeException(
+                    reason,
+                    "Basket intent out of scope: " + reason);
+        }
+
         // 2. Clothing-profile gate for fashion intents
         clothingGate.assertReadyFor(intent, userId);
 

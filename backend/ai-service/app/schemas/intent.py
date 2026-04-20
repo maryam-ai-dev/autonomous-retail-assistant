@@ -9,7 +9,6 @@ from pydantic import BaseModel, Field
 
 
 class IntentCategory(str, Enum):
-    GROCERY = "GROCERY"
     HEALTH_BEAUTY = "HEALTH_BEAUTY"
     GENERAL_MERCHANDISE = "GENERAL_MERCHANDISE"
     FASHION = "FASHION"
@@ -25,8 +24,11 @@ class ParsedIntent(BaseModel):
     )
     currency: str = Field(default="GBP")
     category: IntentCategory = Field(
-        default=IntentCategory.GROCERY,
-        description="Top-level category. Defaults to GROCERY when the LLM cannot determine one.",
+        default=IntentCategory.HEALTH_BEAUTY,
+        description=(
+            "Top-level category. Defaults to HEALTH_BEAUTY when the LLM cannot"
+            " determine one. GROCERY is out of scope — see out_of_scope."
+        ),
     )
     subcategories: list[str] = Field(default_factory=list)
     dietary_requirements: list[str] = Field(
@@ -37,6 +39,17 @@ class ParsedIntent(BaseModel):
     item_hints: list[str] = Field(default_factory=list)
     timing: str | None = None
     notes: str | None = None
+    out_of_scope: bool = Field(
+        default=False,
+        description=(
+            "True when the user's intent is outside Aisleon's coverage (e.g. grocery"
+            " — handled by NourishOS). When set, Spring returns 422 OUT_OF_SCOPE."
+        ),
+    )
+    out_of_scope_reason: str | None = Field(
+        default=None,
+        description="Short reason string when out_of_scope is true (e.g. 'grocery').",
+    )
 
 
 class IntentParseRequest(BaseModel):

@@ -36,54 +36,46 @@ class CandidateSelectionServiceTest {
             new CandidateSelectionService(catalogueService, registry, engine);
 
     @Test
-    void halalOnlyProfileExcludesUnknownMeat() {
-        when(registry.availableRetailers()).thenReturn(Set.of(Retailer.TESCO));
+    void groceryProductsAreExcludedFromCandidatePool() {
+        // B12.1: GROCERY is out of scope. Any grocery product returned by a
+        // connector is filtered out of the candidate pool before dietary /
+        // size / retailer filters run.
+        when(registry.availableRetailers()).thenReturn(Set.of(Retailer.BOOTS));
         when(catalogueService.searchAll(anyString(), any(), anyInt()))
                 .thenReturn(
                         Map.of(
-                                Retailer.TESCO,
+                                Retailer.BOOTS,
                                 List.of(
                                         product(
-                                                "u",
+                                                "groc",
                                                 "chicken",
                                                 ProductCategory.GROCERY,
                                                 ProductSubcategory.MEAT_POULTRY,
-                                                Retailer.TESCO,
+                                                Retailer.BOOTS,
                                                 List.of(DietaryTag.HALAL_UNKNOWN),
                                                 0.8),
                                         product(
-                                                "v",
-                                                "chicken",
-                                                ProductCategory.GROCERY,
-                                                ProductSubcategory.MEAT_POULTRY,
-                                                Retailer.TESCO,
-                                                List.of(DietaryTag.HALAL_VERIFIED),
-                                                0.9),
-                                        product(
-                                                "a",
-                                                "apple",
-                                                ProductCategory.GROCERY,
-                                                ProductSubcategory.FRUIT_VEG,
-                                                Retailer.TESCO,
+                                                "hb",
+                                                "shampoo",
+                                                ProductCategory.HEALTH_BEAUTY,
+                                                ProductSubcategory.HAIRCARE,
+                                                Retailer.BOOTS,
                                                 List.of(),
-                                                0.7))));
+                                                0.9))));
 
-        TasteProfile halalProfile =
-                new TasteProfile(true, false, false, List.of(), List.of(), List.of());
-        CandidatePool pool = service.select(groceryIntent(), halalProfile, null, 20);
-
+        CandidatePool pool = service.select(healthBeautyIntent(), TasteProfile.empty(), null, 20);
         assertThat(pool.products())
                 .extracting(NormalizedProduct::externalId)
-                .doesNotContain("u")
-                .contains("v", "a");
+                .doesNotContain("groc")
+                .contains("hb");
     }
 
     @Test
     void allRetailersDownThrowsWithFailureReasons() {
         when(registry.availableRetailers()).thenReturn(Set.of());
-        ConnectorStatus tescoDown =
+        ConnectorStatus bootsDown =
                 new ConnectorStatus(
-                        Retailer.TESCO,
+                        Retailer.BOOTS,
                         false,
                         false,
                         CircuitState.OPEN,
@@ -92,10 +84,10 @@ class CandidateSelectionServiceTest {
                         "timeout",
                         0,
                         0,
-                        true);
-        ConnectorStatus sainsDown =
+                        false);
+        ConnectorStatus argosDown =
                 new ConnectorStatus(
-                        Retailer.SAINSBURYS,
+                        Retailer.ARGOS,
                         false,
                         false,
                         CircuitState.CLOSED,
@@ -105,30 +97,30 @@ class CandidateSelectionServiceTest {
                         0,
                         0,
                         false);
-        when(registry.allStatuses()).thenReturn(List.of(tescoDown, sainsDown));
+        when(registry.allStatuses()).thenReturn(List.of(bootsDown, argosDown));
 
         assertThatThrownBy(
                         () ->
                                 service.select(
-                                        groceryIntent(), TasteProfile.empty(), null, 20))
+                                        healthBeautyIntent(), TasteProfile.empty(), null, 20))
                 .isInstanceOfSatisfying(
                         NoRetailersAvailableException.class,
                         ex -> {
                             assertThat(ex.failureReasons())
-                                    .containsEntry(Retailer.TESCO, "timeout")
-                                    .containsEntry(Retailer.SAINSBURYS, "bot detection");
+                                    .containsEntry(Retailer.BOOTS, "timeout")
+                                    .containsEntry(Retailer.ARGOS, "bot detection");
                         });
     }
 
     @Test
     void partialFailureContinuesWithRemainingRetailers() {
         when(registry.availableRetailers())
-                .thenReturn(Set.of(Retailer.TESCO, Retailer.SAINSBURYS));
-        when(registry.statusFor(Retailer.SAINSBURYS))
+                .thenReturn(Set.of(Retailer.BOOTS, Retailer.ARGOS));
+        when(registry.statusFor(Retailer.ARGOS))
                 .thenReturn(
                         Optional.of(
                                 new ConnectorStatus(
-                                        Retailer.SAINSBURYS,
+                                        Retailer.ARGOS,
                                         true,
                                         false,
                                         CircuitState.CLOSED,
@@ -141,61 +133,61 @@ class CandidateSelectionServiceTest {
         when(catalogueService.searchAll(anyString(), any(), anyInt()))
                 .thenReturn(
                         Map.of(
-                                Retailer.TESCO,
+                                Retailer.BOOTS,
                                 List.of(
                                         product(
                                                 "t",
-                                                "oat milk",
-                                                ProductCategory.GROCERY,
-                                                ProductSubcategory.DAIRY,
-                                                Retailer.TESCO,
+                                                "moisturiser",
+                                                ProductCategory.HEALTH_BEAUTY,
+                                                ProductSubcategory.SKINCARE,
+                                                Retailer.BOOTS,
                                                 List.of(),
                                                 0.9)),
-                                Retailer.SAINSBURYS,
+                                Retailer.ARGOS,
                                 List.of()));
 
-        CandidatePool pool = service.select(groceryIntent(), TasteProfile.empty(), null, 20);
+        CandidatePool pool = service.select(healthBeautyIntent(), TasteProfile.empty(), null, 20);
 
         assertThat(pool.products()).hasSize(1);
-        assertThat(pool.retailerFailures()).containsKey(Retailer.SAINSBURYS);
+        assertThat(pool.retailerFailures()).containsKey(Retailer.ARGOS);
     }
 
     @Test
     void preferredRetailerItemsRankedFirstWithOthersStillIncluded() {
         when(registry.availableRetailers())
-                .thenReturn(Set.of(Retailer.TESCO, Retailer.SAINSBURYS));
+                .thenReturn(Set.of(Retailer.BOOTS, Retailer.ARGOS));
         when(catalogueService.searchAll(anyString(), any(), anyInt()))
                 .thenReturn(
                         Map.of(
-                                Retailer.TESCO,
+                                Retailer.BOOTS,
                                 List.of(
                                         product(
-                                                "t-low",
-                                                "oat milk",
-                                                ProductCategory.GROCERY,
-                                                ProductSubcategory.DAIRY,
-                                                Retailer.TESCO,
+                                                "b-low",
+                                                "moisturiser",
+                                                ProductCategory.HEALTH_BEAUTY,
+                                                ProductSubcategory.SKINCARE,
+                                                Retailer.BOOTS,
                                                 List.of(),
                                                 0.4)),
-                                Retailer.SAINSBURYS,
+                                Retailer.ARGOS,
                                 List.of(
                                         product(
-                                                "s-high",
-                                                "oat milk",
-                                                ProductCategory.GROCERY,
-                                                ProductSubcategory.DAIRY,
-                                                Retailer.SAINSBURYS,
+                                                "a-high",
+                                                "moisturiser",
+                                                ProductCategory.HEALTH_BEAUTY,
+                                                ProductSubcategory.SKINCARE,
+                                                Retailer.ARGOS,
                                                 List.of(),
                                                 0.9))));
 
-        TasteProfile preferTesco =
+        TasteProfile preferBoots =
                 new TasteProfile(
-                        false, false, false, List.of(Retailer.TESCO), List.of(), List.of());
-        CandidatePool pool = service.select(groceryIntent(), preferTesco, null, 20);
+                        false, false, false, List.of(Retailer.BOOTS), List.of(), List.of());
+        CandidatePool pool = service.select(healthBeautyIntent(), preferBoots, null, 20);
 
         assertThat(pool.products())
                 .extracting(NormalizedProduct::externalId)
-                .containsExactly("t-low", "s-high");
+                .containsExactly("b-low", "a-high");
     }
 
     @Test
@@ -206,25 +198,25 @@ class CandidateSelectionServiceTest {
                     product(
                             "id-" + i,
                             "item " + i,
-                            ProductCategory.GROCERY,
-                            ProductSubcategory.SNACKS,
-                            Retailer.TESCO,
+                            ProductCategory.HEALTH_BEAUTY,
+                            ProductSubcategory.SKINCARE,
+                            Retailer.BOOTS,
                             List.of(),
                             0.5));
         }
-        when(registry.availableRetailers()).thenReturn(Set.of(Retailer.TESCO));
+        when(registry.availableRetailers()).thenReturn(Set.of(Retailer.BOOTS));
         when(catalogueService.searchAll(anyString(), any(), anyInt()))
-                .thenReturn(Map.of(Retailer.TESCO, many));
+                .thenReturn(Map.of(Retailer.BOOTS, many));
 
-        CandidatePool pool = service.select(groceryIntent(), TasteProfile.empty(), null, 200);
+        CandidatePool pool = service.select(healthBeautyIntent(), TasteProfile.empty(), null, 200);
         assertThat(pool.products()).hasSize(50);
     }
 
-    private static ParsedIntent groceryIntent() {
+    private static ParsedIntent healthBeautyIntent() {
         return new ParsedIntent(
-                "weekly groceries",
-                new BigDecimal("70"),
-                ProductCategory.GROCERY,
+                "skincare essentials",
+                new BigDecimal("50"),
+                ProductCategory.HEALTH_BEAUTY,
                 List.of(),
                 false,
                 List.of());

@@ -1,12 +1,19 @@
-# Known halal brands (editable — classpath resource). One brand per line.
-# Lines beginning with '#' or blank are ignored.
-# Case-insensitive matching.
-Ieat
-Kepak
-Janan
-Halal World Food
-Tahira
-iEat Foods
-Shazans
-Crescent Foods
-Al-Islami
+# Known halal-certified non-food brands (editable — classpath resource).
+# One brand per line. Case-insensitive matching. Lines beginning with '#' or
+# blank are ignored.
+#
+# Scope as of v1.1 (sprint B12.1): health, beauty, and personal care only.
+# Grocery/food halal is out of scope — NourishOS handles that.
+#
+# Inclusion criteria: brand holds halal certification from HMC, HFA, Halal
+# Cosmetics Company, IFANCA, or equivalent body, OR is publicly verified as
+# halal-safe across its product line. Verify before adding.
+Inika Organic
+PHB Ethical Beauty
+Tuesday in Love
+Ivy Beauty
+Amara Cosmetics
+Iba Halal Care
+Saaf Skincare
+Shea Moisture
+The Halal Cosmetics Company

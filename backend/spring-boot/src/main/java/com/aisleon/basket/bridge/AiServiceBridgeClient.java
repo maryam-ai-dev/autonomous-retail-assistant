@@ -107,25 +107,57 @@ public class AiServiceBridgeClient {
                 budget = null;
             }
         }
-        ProductCategory category = ProductCategory.GROCERY;
+        ProductCategory category = ProductCategory.HEALTH_BEAUTY;
         Object categoryObj = intent.get("category");
         if (categoryObj != null) {
             try {
                 String name = categoryObj.toString();
                 if ("MIXED".equals(name)) {
-                    category = ProductCategory.GROCERY;
+                    category = ProductCategory.HEALTH_BEAUTY;
                 } else {
                     category = ProductCategory.valueOf(name);
                 }
             } catch (IllegalArgumentException ignored) {
-                category = ProductCategory.GROCERY;
+                category = ProductCategory.HEALTH_BEAUTY;
             }
         }
         List<String> tags = toStringList(intent.get("item_hints"));
         tags.addAll(toStringList(intent.get("subcategories")));
         List<String> dietary = toStringList(intent.get("dietary_requirements"));
         boolean halalRequired = dietary.stream().anyMatch(d -> d.equalsIgnoreCase("HALAL"));
-        return new ParsedIntent(rawText, budget, category, tags, halalRequired, List.of());
+        boolean outOfScope = asBool(intent.get("outOfScope"), intent.get("out_of_scope"));
+        String outOfScopeReason = asOptionalString(
+                intent.get("reason"), intent.get("out_of_scope_reason"));
+        return new ParsedIntent(
+                rawText,
+                budget,
+                category,
+                tags,
+                halalRequired,
+                List.of(),
+                outOfScope,
+                outOfScopeReason);
+    }
+
+    private static boolean asBool(Object... candidates) {
+        for (Object c : candidates) {
+            if (c instanceof Boolean b) return b;
+            if (c != null) {
+                String s = c.toString();
+                if ("true".equalsIgnoreCase(s)) return true;
+                if ("false".equalsIgnoreCase(s)) return false;
+            }
+        }
+        return false;
+    }
+
+    private static String asOptionalString(Object... candidates) {
+        for (Object c : candidates) {
+            if (c == null) continue;
+            String s = c.toString();
+            if (!s.isBlank()) return s;
+        }
+        return null;
     }
 
     private static List<String> toStringList(Object value) {

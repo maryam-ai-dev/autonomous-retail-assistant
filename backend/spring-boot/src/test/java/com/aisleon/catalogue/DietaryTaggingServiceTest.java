@@ -21,9 +21,12 @@ class DietaryTaggingServiceTest {
     }
 
     @Test
-    void knownHalalBrandChickenIsHalalLikelyWithWarning() {
+    void knownHalalBrandIsHalalLikelyWithWarning() {
+        // B12.1: known_halal_brands.txt now lists non-food halal brands only.
+        // The DietaryTaggingService still resolves HALAL_LIKELY via brand match
+        // regardless of subcategory — B12.4 will narrow this to HEALTH_BEAUTY.
         var result = service.classifyHalal(
-                "Ieat",
+                "Inika Organic",
                 ProductSubcategory.MEAT_POULTRY,
                 List.of());
         assertThat(result.halalTag()).isEqualTo(Optional.of(DietaryTag.HALAL_LIKELY));

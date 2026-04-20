@@ -28,6 +28,17 @@ public class BasketExceptionHandler {
                         "detail", ex.getMessage()));
     }
 
+    @ExceptionHandler(OutOfScopeException.class)
+    public ResponseEntity<Map<String, String>> handleOutOfScope(OutOfScopeException ex) {
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
+                .body(Map.of(
+                        "reason", "OUT_OF_SCOPE",
+                        "outOfScopeReason", ex.reason() == null ? "" : ex.reason(),
+                        "message",
+                        "Aisleon covers health, beauty, homeware, fashion, and electronics."
+                                + " For grocery, try NourishOS."));
+    }
+
     @ExceptionHandler(NoRetailersAvailableException.class)
     public ResponseEntity<Map<String, Object>> handleNoRetailers(
             NoRetailersAvailableException ex) {

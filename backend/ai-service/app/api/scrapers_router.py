@@ -10,7 +10,6 @@ from pydantic import BaseModel, Field
 from app.scrapers.argos_connector import ArgosConnector
 from app.scrapers.boots_connector import BootsConnector
 from app.scrapers.playwright_connector import PlaywrightConnector
-from app.scrapers.sainsburys_connector import SainsburysConnector
 
 router = APIRouter(prefix="/scrapers", tags=["scrapers"])
 
@@ -22,7 +21,6 @@ class ScraperSearchRequest(BaseModel):
 
 
 _CONNECTORS: dict[str, type[PlaywrightConnector]] = {
-    "SAINSBURYS": SainsburysConnector,
     "BOOTS": BootsConnector,
     "ARGOS": ArgosConnector,
 }

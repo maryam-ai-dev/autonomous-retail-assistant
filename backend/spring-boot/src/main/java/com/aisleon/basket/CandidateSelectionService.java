@@ -86,6 +86,8 @@ public class CandidateSelectionService {
             throw new NoRetailersAvailableException(failures);
         }
 
+        combined = excludeGrocery(combined);
+
         List<NormalizedProduct> filtered = engine.applyDietaryFilter(combined, taste);
         if (intent != null && intent.primaryCategory() == ProductCategory.FASHION) {
             filtered = engine.applySizeFilter(filtered, clothing);
@@ -99,6 +101,21 @@ public class CandidateSelectionService {
         sorted.sort(rankingComparator(taste));
 
         return new CandidatePool(topPerCategory(sorted), failures);
+    }
+
+    private List<NormalizedProduct> excludeGrocery(List<NormalizedProduct> candidates) {
+        List<NormalizedProduct> out = new ArrayList<>(candidates.size());
+        for (NormalizedProduct p : candidates) {
+            if (p.category() == ProductCategory.GROCERY) {
+                log.warn(
+                        "GroceryCategoryExcluded: productId={} retailer={} — grocery out of scope",
+                        p.externalId(),
+                        p.retailer());
+                continue;
+            }
+            out.add(p);
+        }
+        return out;
     }
 
     private static TasteProfile denyOnly(TasteProfile taste) {
