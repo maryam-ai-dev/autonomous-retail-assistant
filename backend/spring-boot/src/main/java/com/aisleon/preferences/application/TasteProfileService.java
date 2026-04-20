@@ -47,6 +47,8 @@ public class TasteProfileService {
         if (req.getBottomSize() != null) entity.setBottomSize(req.getBottomSize());
         if (req.getShoeSizeUk() != null) entity.setShoeSizeUk(req.getShoeSizeUk());
         if (req.getDressSize() != null) entity.setDressSize(req.getDressSize());
+        if (req.getSizePreference() != null)
+            entity.setSizePreference(normalizeSizePreference(req.getSizePreference()));
         if (req.getClothingPreferences() != null)
             entity.setClothingPreferences(req.getClothingPreferences());
         entity.setUpdatedAt(LocalDateTime.now());
@@ -55,13 +57,26 @@ public class TasteProfileService {
     }
 
     public ClothingProfileCompleteResponse clothingComplete(UUID userId) {
+        // B12.3: a profile is "complete enough" once at least one size field is
+        // set. The full applySizeFilter checks the relevant field per
+        // subcategory and skips filtering when the field for that subcategory
+        // is null.
         boolean complete = repository.findByUserId(userId)
                 .map(e -> e.getTopSize() != null
-                        && e.getBottomSize() != null
-                        && e.getShoeSizeUk() != null
-                        && e.getDressSize() != null)
+                        || e.getBottomSize() != null
+                        || e.getShoeSizeUk() != null
+                        || e.getDressSize() != null)
                 .orElse(false);
         return new ClothingProfileCompleteResponse(complete);
+    }
+
+    private static String normalizeSizePreference(String raw) {
+        if (raw == null) return "EXACT";
+        String upper = raw.trim().toUpperCase();
+        if ("SIZE_UP".equals(upper) || "SIZE_DOWN".equals(upper) || "EXACT".equals(upper)) {
+            return upper;
+        }
+        return "EXACT";
     }
 
     @Transactional
@@ -95,6 +110,7 @@ public class TasteProfileService {
                 .bottomSize(e.getBottomSize())
                 .shoeSizeUk(e.getShoeSizeUk())
                 .dressSize(e.getDressSize())
+                .sizePreference(e.getSizePreference() == null ? "EXACT" : e.getSizePreference())
                 .clothingPreferences(e.getClothingPreferences())
                 .build();
     }

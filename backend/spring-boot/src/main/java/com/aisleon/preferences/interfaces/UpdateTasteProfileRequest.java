@@ -66,6 +66,11 @@ public class UpdateTasteProfileRequest {
     @Schema(nullable = true)
     private String dressSize;
 
+    @Schema(
+            nullable = true,
+            description = "One of EXACT, SIZE_UP, SIZE_DOWN. Defaults to EXACT when null.")
+    private String sizePreference;
+
     @Schema(nullable = true)
     private List<String> clothingPreferences;
 }

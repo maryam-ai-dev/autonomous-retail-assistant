@@ -100,6 +100,10 @@ public class TasteProfileJpaEntity {
     @Column(name = "dress_size")
     private String dressSize;
 
+    @Column(name = "size_preference")
+    @Builder.Default
+    private String sizePreference = "EXACT";
+
     @JdbcTypeCode(SqlTypes.ARRAY)
     @Column(name = "clothing_preferences")
     @Builder.Default

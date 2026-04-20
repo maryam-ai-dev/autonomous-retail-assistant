@@ -69,6 +69,13 @@ public class TasteProfileResponse {
     @Schema(description = "Dress size — null if not set", nullable = true)
     private String dressSize;
 
+    @Schema(
+            description =
+                    "Size-match strategy for applySizeFilter: EXACT (default), SIZE_UP (also"
+                            + " include one size up — looser fit), or SIZE_DOWN (fitted).",
+            nullable = true)
+    private String sizePreference;
+
     @Schema(description = "Additional clothing preferences", requiredMode = Schema.RequiredMode.REQUIRED)
     private List<String> clothingPreferences;
 }

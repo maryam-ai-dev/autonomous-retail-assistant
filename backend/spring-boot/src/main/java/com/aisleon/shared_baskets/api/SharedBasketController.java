@@ -104,7 +104,8 @@ public class SharedBasketController {
                 profile.getTopSize(),
                 profile.getBottomSize(),
                 shoeSize == null ? null : shoeSize.toPlainString(),
-                profile.getDressSize());
+                profile.getDressSize(),
+                ClothingProfile.SizePreference.parse(profile.getSizePreference()));
     }
 
     private static List<Retailer> parseRetailers(List<String> names) {

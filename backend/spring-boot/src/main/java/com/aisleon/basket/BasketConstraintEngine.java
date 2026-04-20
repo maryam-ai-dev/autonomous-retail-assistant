@@ -51,21 +51,108 @@ public class BasketConstraintEngine {
         return out;
     }
 
+    /** Size-dependent fashion subcategories — all others pass the size filter untouched. */
+    private static final EnumSet<ProductSubcategory> SIZE_DEPENDENT_SUBCATEGORIES =
+            EnumSet.of(
+                    ProductSubcategory.TOPS,
+                    ProductSubcategory.BOTTOMS,
+                    ProductSubcategory.DRESSES,
+                    ProductSubcategory.OUTERWEAR,
+                    ProductSubcategory.FOOTWEAR,
+                    ProductSubcategory.SPORTSWEAR,
+                    ProductSubcategory.UNDERWEAR);
+
     public List<NormalizedProduct> applySizeFilter(
             List<NormalizedProduct> candidates, ClothingProfile clothing) {
-        if (clothing == null || !clothing.isComplete()) return candidates;
+        if (clothing == null || !clothing.hasAnySize()) return candidates;
         List<NormalizedProduct> out = new ArrayList<>(candidates.size());
         for (NormalizedProduct p : candidates) {
             if (!FASHION_CATEGORIES.contains(p.category())) {
                 out.add(p);
                 continue;
             }
-            // Size matching is retailer-dependent and approximate; filter only
-            // out obvious mismatches. Without size metadata on the product we
-            // cannot reject with confidence, so pass through.
-            out.add(p);
+            if (!SIZE_DEPENDENT_SUBCATEGORIES.contains(p.subcategory())) {
+                // Accessories, bags, jewellery — not size-dependent.
+                out.add(p);
+                continue;
+            }
+            String desired = sizeFieldFor(p.subcategory(), clothing);
+            if (desired == null || desired.isBlank()) {
+                // No size set for this subcategory — do not filter.
+                out.add(p);
+                continue;
+            }
+            if (p.sizeText() == null || p.sizeText().isBlank()) {
+                // Size unknown on the product — pass through rather than exclude.
+                out.add(p);
+                continue;
+            }
+            if (productAdvertisesSize(p.sizeText(), desired, clothing.sizePreference())) {
+                out.add(p);
+            }
         }
         return out;
+    }
+
+    private static String sizeFieldFor(ProductSubcategory subcategory, ClothingProfile clothing) {
+        return switch (subcategory) {
+            case FOOTWEAR -> clothing.shoeSize();
+            case BOTTOMS -> clothing.bottomSize();
+            case DRESSES -> clothing.dressSize();
+            default -> clothing.topSize();
+        };
+    }
+
+    private static boolean productAdvertisesSize(
+            String sizeText, String desired, ClothingProfile.SizePreference preference) {
+        Set<String> available = tokenizeSizes(sizeText);
+        if (available.contains(desired.toUpperCase())) return true;
+        if (preference == ClothingProfile.SizePreference.SIZE_UP) {
+            String up = neighbourSize(desired, 1);
+            if (up != null && available.contains(up.toUpperCase())) return true;
+        } else if (preference == ClothingProfile.SizePreference.SIZE_DOWN) {
+            String down = neighbourSize(desired, -1);
+            if (down != null && available.contains(down.toUpperCase())) return true;
+        }
+        return false;
+    }
+
+    private static Set<String> tokenizeSizes(String sizeText) {
+        Set<String> out = new HashSet<>();
+        for (String raw : sizeText.split("[,/|]+")) {
+            String token = raw.trim().toUpperCase();
+            if (!token.isEmpty()) out.add(token);
+        }
+        return out;
+    }
+
+    /**
+     * Lettered sizes (XS/S/M/L/XL/XXL) and numeric sizes are both in scope. For
+     * numeric sizes we nudge by the UK-step convention: 2 for clothing (8→10),
+     * 0.5 for shoes (6→6.5). We return {@code null} when we can't confidently
+     * compute a neighbour.
+     */
+    private static String neighbourSize(String desired, int direction) {
+        String u = desired.trim().toUpperCase();
+        List<String> lettered = List.of("XS", "S", "M", "L", "XL", "XXL");
+        int idx = lettered.indexOf(u);
+        if (idx >= 0) {
+            int target = idx + direction;
+            if (target < 0 || target >= lettered.size()) return null;
+            return lettered.get(target);
+        }
+        try {
+            if (u.contains(".")) {
+                double val = Double.parseDouble(u) + direction * 0.5;
+                // Normalise "10.0" → "10"
+                String s = String.valueOf(val);
+                return s.endsWith(".0") ? s.substring(0, s.length() - 2) : s;
+            }
+            int val = Integer.parseInt(u);
+            return String.valueOf(val + direction * 2);
+        } catch (NumberFormatException ignored) {
+            return null;
+        }
     }
 
     public List<NormalizedProduct> applyRetailerFilter(
