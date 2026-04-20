@@ -89,3 +89,68 @@ export async function saveClothingProfile(
     };
   }
 }
+
+/**
+ * Sprint F35.2: fashion-ish keyword heuristic. Fires the proactive size
+ * prompt before the server-side 428 gate. Size-dependent fashion
+ * subcategories only — accessories/bags/hats are intentionally excluded so
+ * we don't prompt when size isn't needed.
+ */
+const SIZE_DEPENDENT_KEYWORDS = [
+  "dress", "dresses", "skirt", "skirts",
+  "top", "tops", "t-shirt", "tshirt", "tee", "tees", "shirt", "shirts",
+  "blouse", "knitwear", "jumper", "jumpers", "sweater", "sweaters", "cardigan",
+  "coat", "coats", "jacket", "jackets", "outerwear",
+  "trousers", "jeans", "shorts", "leggings",
+  "tracksuit", "sportswear", "activewear",
+  "shoe", "shoes", "trainers", "sneakers", "boots", "heels", "sandals", "footwear",
+  "lingerie", "underwear", "bra",
+];
+
+export function looksLikeSizeDependentFashion(text: string): boolean {
+  const lower = text.toLowerCase();
+  return SIZE_DEPENDENT_KEYWORDS.some((k) => new RegExp(`\\b${k}\\b`).test(lower));
+}
+
+export async function fetchClothingComplete(): Promise<boolean> {
+  if (USE_MOCKS) return false;
+  try {
+    const response = await apiClient.get<{ complete: boolean }>(
+      "/api/preferences/clothing-profile/complete",
+      { timeout: 5_000 },
+    );
+    return Boolean(response.data.complete);
+  } catch {
+    // If we can't reach the check, assume complete — let the server-side 428
+    // gate handle enforcement rather than spuriously prompting.
+    return true;
+  }
+}
+
+export type QuickSizePayload = {
+  topSize: string;
+  shoeSizeUk: string;
+};
+
+export async function saveQuickSize(
+  payload: QuickSizePayload,
+): Promise<{ ok: boolean; message?: string }> {
+  if (USE_MOCKS) return { ok: true };
+  try {
+    const shoeNumeric = Number(payload.shoeSizeUk);
+    await apiClient.put(
+      "/api/preferences/taste-profile",
+      {
+        topSize: payload.topSize || null,
+        shoeSizeUk: Number.isFinite(shoeNumeric) ? shoeNumeric : null,
+      },
+      { timeout: 10_000 },
+    );
+    return { ok: true };
+  } catch (err: unknown) {
+    return {
+      ok: false,
+      message: err instanceof Error ? err.message : "Save failed",
+    };
+  }
+}

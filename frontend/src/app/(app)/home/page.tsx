@@ -7,16 +7,20 @@ import { Button } from "@/shared/ui/Button";
 import { useActiveBasket } from "@/lib/api/useActiveBasket";
 import { useCurrentUser } from "@/lib/api/useCurrentUser";
 import {
+  fetchClothingComplete,
+  looksLikeSizeDependentFashion,
   submitBasketIntent,
   type SubmitIntentResult,
 } from "@/features/basket-intent/submit";
 import { ClothingProfileSheet } from "@/features/basket-intent/ClothingProfileSheet";
+import { QuickSizePrompt } from "@/features/basket-intent/QuickSizePrompt";
 import type { components } from "@/types/api.generated";
 
 type Basket = components["schemas"]["BasketDto"];
 
 type SubmitState =
   | { kind: "idle" }
+  | { kind: "size-prompt" }
   | { kind: "submitting" }
   | { kind: "success"; basket: Basket }
   | { kind: "clothing-required" }
@@ -82,10 +86,17 @@ function HomeContent() {
     });
   }
 
-  function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     const text = intent.trim();
     if (!text) return;
+    if (looksLikeSizeDependentFashion(text)) {
+      const complete = await fetchClothingComplete();
+      if (!complete) {
+        setSubmit({ kind: "size-prompt" });
+        return;
+      }
+    }
     void runSubmit(text);
   }
 
@@ -186,6 +197,13 @@ function HomeContent() {
           </p>
         </form>
       )}
+
+      {submit.kind === "size-prompt" ? (
+        <QuickSizePrompt
+          onSaved={() => void runSubmit(intent.trim())}
+          onSkip={() => void runSubmit(intent.trim())}
+        />
+      ) : null}
 
       {submit.kind === "submitting" ? <BasketGenerationSkeleton /> : null}
 
